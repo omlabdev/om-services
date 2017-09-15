@@ -45,11 +45,10 @@ exports.authorizer = function(username, password) {
  * @param  {Function} next 
  */
 exports.authMiddleware = function(req, res, next) {
-	if (req.url.endsWith('/auth')) return next();
+	if (req.url.endsWith('/auth') || req.method === 'OPTIONS') return next();
 
-	const token = (req.headers.authorization || '')
-					.replace('Basic:', '').replace(/^\s+|\s+$/g, '');
-
+	const token = (req.headers.authorization || '').replace('Basic:', '').trim();
+	
 	const [ encodedUsername, encodedPassword ] = token.split(':');
 	if (!encodedUsername || !encodedPassword) res.sendStatus(401);
 
