@@ -47,8 +47,8 @@ exports.getObjectives = function(req, res) {
 
 	const query = Object.assign({}, getQueryDateFilter(year, month, day, all), 
 		{ 
-			scratched : false, 
-			progress  : { $lt : 1 } 
+			// scratched : false, 
+			// progress  : { $lt : 1 } 
 		});
 
 	ObjectivesModel.find(query)

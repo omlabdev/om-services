@@ -12,15 +12,16 @@ const schema = new Schema({
 	no_task_title 	: { type : String }, 
 
 	owners 			: { 
-		type : [{ type: Schema.Types.ObjectId, ref: 'User' }], 
-		validate : [(v) => v.length > 0, 'Objective must have at least one owner'] 
+		type 	 : [{ type: Schema.Types.ObjectId, ref: 'User' }], 
+		validate : [function(v) { return v.length > 0 }, 'Objective must have at least one owner'] 
 	},
 
 	progress		: { type : Number, min : 0, max : 1, required : true, default : 0 }, // 0 to 1. 1 means completed
-	completed_by 	: { type: Schema.Types.ObjectId, ref: 'User' },
+	completed_by 	: { type: Schema.Types.ObjectId, ref: 'User', default: null },
 	completed_ts 	: { type : Date, default : null },
 	scratched 		: { type : Boolean, default : false },
 	scratched_ts	: { type : Date, default : null },
+	scratched_by	: { type : Schema.Types.ObjectId, ref: 'User', default: null },
 
 	created_by		: { type : Schema.Types.ObjectId, ref: 'User', required : true },
 	created_ts 		: { type : Date, default : Date.now }
