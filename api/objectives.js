@@ -26,8 +26,8 @@ exports.setup = (router) => {
 
 
 exports.createObjective = function(req, res) {
-	const taskData = req.body;
-	const model = new ObjectivesModel(taskData);
+	const objectiveData = req.body;
+	const model = new ObjectivesModel(objectiveData);
 	ObjectivesModel.create(model)
 		.then(res.json.bind(res))
 		.catch((error) => {

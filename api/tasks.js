@@ -1,6 +1,7 @@
 const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
 const ActivityModel = require('./../models/activity');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 /*
 	POST 	/api/{v}/tasks/add
@@ -31,31 +32,26 @@ exports.createTask = function(req, res) {
 
 exports.deleteTask = function(req, res) {
 	const _id = req.params.taskId;
-	deleteRelatedObjectives(_id)
-		.then(() => {
-			TaskModel.remove({ _id })
-				.then(res.json.bind(res))
-				.catch((error) => {
-					res.json({ error })
-				})
-		})
+	deleteRelatedObjectivesAndActivity(_id)
+		.then(() => deleteRelatedActivity( 'task', [ObjectId(_id)] ))
+		.then(() => TaskModel.remove({ _id }))
+		.then(res.json.bind(res))
 		.catch(error => {
+			console.error(error);
 			res.json({ error })
 		})
 }
 
-function deleteRelatedObjectives(taskId) {
+function deleteRelatedObjectivesAndActivity(taskId) {
 	return ObjectiveModel.find({ related_task : taskId })
 		.then(objectives => objectives.map(o => o._id))
-		.then(objectiveIds => deleteRelatedActivity(objectiveIds))
-		.then(() => {
-			// remove objectives
-			return ObjectiveModel.remove({ related_task : taskId })
-		})
+		.then(objectiveIds => deleteRelatedActivity('objective', objectiveIds))
+		.then(() => ObjectiveModel.remove({ related_task : taskId }))
 }
 
-function deleteRelatedActivity(objectivesId) {
-	const query = { meta : { $exists: true }, 'meta.objective' : {$in : objectivesId } };
+function deleteRelatedActivity(metaKey, ids) {
+	const query = { meta : { $exists: true }, [`meta.${metaKey}`] : {$in : ids } };
+	console.log(query);
 	return ActivityModel.remove(query);
 }
 

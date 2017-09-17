@@ -1,5 +1,6 @@
 const ActivityModel = require('./../models/activity');
 const ObjectiveModel = require('./../models/objective');
+const TaskModel = require('./../models/task');
 const async = require('async');
 
 /*
@@ -120,6 +121,18 @@ function hydrateDescription(doc, hydrateDone) {
 				}) 
 			});
 		}
+
+		// if we need to hydrate something from the meta.task
+		// we better go get that bastard too
+		if (variable.indexOf('meta.task') !== -1) {
+			// queue objective to be fetched before hydrating
+			fetchesToDo['meta.task'] = ((fetchDone) => { 
+				fetchMetaTask(doc.meta.task, (err, task) => {
+					doc.meta.task = task.toObject();
+					fetchDone(err);
+				}) 
+			});
+		}
 	})
 
 	// if we need to do some meta fetching, this is the moment to
@@ -160,4 +173,8 @@ function hydrateDescription(doc, hydrateDone) {
 
 function fetchMetaObjective(_id, cb) {
 	ObjectiveModel.findOne({ _id }).populate('related_task').exec(cb);
+}
+
+function fetchMetaTask(_id, cb) {
+	TaskModel.findOne({ _id }).exec(cb);
 }
