@@ -127,7 +127,8 @@ function hydrateDescription(doc, hydrateDone) {
 	// if some of the fetching fails, we finish here and just
 	// return the same document we got on the first place.
 	if (Object.keys(fetchesToDo).length > 0) {
-		async.parallel(Object.values(fetchesToDo), (fetchesError) => {
+		const functions = Object.keys(fetchesToDo).map(k => fetchesToDo[k]);
+		async.parallel(functions, (fetchesError) => {
 			if (fetchesError) return hydrateDone(fetchesError, doc);
 			continueHydrate();
 		})
