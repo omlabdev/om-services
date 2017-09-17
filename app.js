@@ -7,9 +7,15 @@ const bodyParser = require('body-parser');
 const sassMiddleware = require('node-sass-middleware');
 const mongoose = require('mongoose');
 
-const DB_NAME = 'om', DB_HOST = 'localhost';
 mongoose.Promise = global.Promise;
-mongoose.connect('mongodb://' + DB_HOST + '/' + DB_NAME);
+
+if (process.env.MONGODB_URI !== undefined) {
+	mongoose.connect(process.env.MONGODB_URI);
+} else {
+	const DB_NAME = 'om', DB_HOST = 'localhost';
+	mongoose.connect('mongodb://' + DB_HOST + '/' + DB_NAME);
+}
+
 
 const app = express();
 
