@@ -145,6 +145,7 @@ function hydrateDescription(doc, hydrateDone) {
 			let node = doc;
 			for (let i = 0; i < path.length-1; i++) {
 				node = node[path[i]];
+				if (!node) return;
 			}
 			const value = node[path[path.length-1]];
 			variables[variable] = value;
