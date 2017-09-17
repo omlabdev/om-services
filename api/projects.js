@@ -33,7 +33,7 @@ exports.updateProject = function(req, res) {
 }
 
 exports.getProjects = function(req, res) {
-	ProjectModel.find()
+	ProjectModel.find().sort({ name : 1 })
 		.then((projects) => {
 			res.json({ projects })
 		})
