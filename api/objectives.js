@@ -98,26 +98,53 @@ function getQueryDateFilter(pYear, pMonth, pDay, all) {
 	let query = {};
 
 	const dayFilter = {
-		objective_date : {
-			$gte : day,
-			$lte : nextDay
-		},
+		'$or' : [
+			{ 
+				objective_date : { // today only
+					$gte : day,
+					$lte : nextDay
+				}
+			}, 
+			{
+				objective_date : { $lte : nextDay }, // migration
+				progress : { $ne : 1 },
+				scratched : false
+			}
+		],
 		level : 'day'
 	}
 
 	const monthFilter = { 
-		objective_date : {
-			$gte : month,
-			$lte : nextMonth
-		},
+		$or : [
+			{
+				objective_date : { // this month only
+					$gte : month,
+					$lte : nextMonth
+				}
+			},
+			{
+				objective_date : { $lte : nextMonth }, // migration
+				progress : { $ne : 1 },
+				scratched : false
+			}
+		],
 		level : 'month'
 	}
 
 	const yearFilter = {
-		objective_date : {
-			$gte : year,
-			$lte : nextYear
-		},
+		$or : [
+			{
+				objective_date : { // this year only
+					$gte : year,
+					$lte : nextYear
+				}
+			},
+			{
+				objective_date : { $lte : nextYear }, // migration
+				progress : { $ne : 1 },
+				scratched : false
+			}
+		],
 		level : 'year'
 	}
 
