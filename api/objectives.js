@@ -6,6 +6,8 @@ const ObjectivesModel = require('./../models/objective');
 
 	POST 	/api/{v}/objectives/:id
 
+	DELETE 	/api/{v}/objectives/:id
+
 	GET		/api/{v}/objectives/:year
 
 	GET 	/api/{v}/objectives/:year/:month
@@ -17,6 +19,7 @@ const ObjectivesModel = require('./../models/objective');
 exports.setup = (router) => {
 	router.post('/objectives/add', exports.createObjective);
 	router.post('/objectives/:objectiveId', exports.updateObjective);
+	router.delete('/objectives/:objectiveId', exports.deleteObjective);
 	router.get('/objectives/:year/:month?/:day?', exports.getObjectives);
 	router.get('/objectives/:year/:month/:day/all', exports.getObjectives);
 }
@@ -41,12 +44,29 @@ exports.updateObjective = function(req, res) {
 		})
 }
 
+exports.deleteObjective = function(req, res) {
+	const _id = req.params.objectiveId;
+	ObjectivesModel.findOne({ _id })
+		.then(doc => {
+			doc.deleted = true;
+			doc.deleted_ts = Date.now();
+			doc.deleted_by = null; // TODO 
+			doc.save()
+				.then(res.json.bind(res))
+				.catch((error) => { res.json({ error }) })
+		})
+		.catch((error) => {
+			res.json({ error })
+		})
+}
+
 exports.getObjectives = function(req, res) {
 	const { year, month, day, level } = req.params;
 	const all = req.route.path.endsWith('/all');
 
 	const query = Object.assign({}, getQueryDateFilter(year, month, day, all), 
 		{ 
+			deleted : false
 			// scratched : false, 
 			// progress  : { $lt : 1 } 
 		});

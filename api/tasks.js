@@ -56,7 +56,11 @@ exports.getTasks = function(req, res) {
 			deleted : false
 		});
 
-	TaskModel.countAndFind(query).skip(pageZero * pageSize).limit(pageSize)
+	TaskModel.countAndFind(query)
+		.sort({created_ts:-1})
+		.skip(pageZero * pageSize)
+		.limit(pageSize)
+		.populate('project')
 		.exec((error, tasks, count) => {
 			if (error) return res.json({ error });
 

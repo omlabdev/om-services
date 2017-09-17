@@ -17,14 +17,18 @@ const schema = new Schema({
 	},
 
 	progress		: { type : Number, min : 0, max : 1, required : true, default : 0 }, // 0 to 1. 1 means completed
-	completed_by 	: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+	completed_by 	: { type : Schema.Types.ObjectId, ref: 'User', default: null },
 	completed_ts 	: { type : Date, default : null },
 	scratched 		: { type : Boolean, default : false },
 	scratched_ts	: { type : Date, default : null },
 	scratched_by	: { type : Schema.Types.ObjectId, ref: 'User', default: null },
 
 	created_by		: { type : Schema.Types.ObjectId, ref: 'User', required : true },
-	created_ts 		: { type : Date, default : Date.now }
+	created_ts 		: { type : Date, default : Date.now },
+
+	deleted 		: { type : Boolean, default: false },
+	deleted_by		: { type : Schema.Types.ObjectId, ref: 'User', default: null },
+	deleted_ts 		: { type : Date, default : null }
 },{
     toObject: {
       virtuals: true

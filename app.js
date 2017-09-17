@@ -38,6 +38,7 @@ app.use(function(req, res, next) {
 	// Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
     next();
 })
 
