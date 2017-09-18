@@ -1,5 +1,6 @@
 const moment = require('moment');
 const ObjectivesModel = require('./../models/objective');
+const { toObjects } = require('./../utils');
 
 /*
 	POST 	/api/{v}/objectives/add
@@ -61,25 +62,22 @@ exports.deleteObjective = function(req, res) {
 }
 
 exports.getObjectives = function(req, res) {
-	const { year, month, day, level } = req.params;
+	const { year, month, day } = req.params;
 	const all = req.route.path.endsWith('/all');
 
-	const query = Object.assign({}, getQueryDateFilter(year, month, day, all), 
-		{ 
-			deleted : false
-			// scratched : false, 
-			// progress  : { $lt : 1 } 
-		});
+	exports._getObjectives(year, month, day, all)
+		.then(objectivesByLevel => res.json({ objectives, query }))
+		.catch(error => { res.json({ error }) })
+}
 
-	ObjectivesModel.find(query)
+exports._getObjectives = function(year, month, day, all) {
+	const query = Object.assign({}, getQueryDateFilter(year, month, day, all), 
+		{ deleted : false });
+
+	return ObjectivesModel.find(query)
 		.populate('related_task owners created_by')
-		.then((objectives) => {
-			objectives = groupByLevel(objectives);
-			res.json({ objectives, query })
-		})
-		.catch((error) => {
-			res.json({ error })
-		})
+		.then(toObjects)
+		.then((objectives) => groupByLevel(objectives));
 }
 
 function getQueryDateFilter(pYear, pMonth, pDay, all) {
@@ -98,51 +96,57 @@ function getQueryDateFilter(pYear, pMonth, pDay, all) {
 	let query = {};
 
 	const dayFilter = {
-		'$or' : [
-			{ 
-				objective_date : { // today only
-					$gte : day,
-					$lte : nextDay
-				}
-			}, 
+		objective_date : { $lte : nextDay }, // migration
+		$and : [
 			{
-				objective_date : { $lte : nextDay }, // migration
-				progress : { $ne : 1 },
-				scratched : false
+				$or : [
+					{ progress 		: { $ne  : 1 } }, // not completed
+					{ completed_ts  : { $gte : day } } // or completed today
+				]
+			},
+			{
+				$or : [
+					{ scratched 	: false }, // not scratched
+					{ scratched_ts  : { $gte : day } } // or scratched today
+				]
 			}
 		],
 		level : 'day'
 	}
 
-	const monthFilter = { 
-		$or : [
+	const monthFilter = {
+		objective_date : { $lte : nextMonth }, // migration
+		$and : [
 			{
-				objective_date : { // this month only
-					$gte : month,
-					$lte : nextMonth
-				}
+				$or : [
+					{ progress 		: { $ne  : 1 } }, // not completed
+					{ completed_ts  : { $gte : month } } // or completed this month
+				]
 			},
 			{
-				objective_date : { $lte : nextMonth }, // migration
-				progress : { $ne : 1 },
-				scratched : false
+				$or : [
+					{ scratched 	: false }, // not scratched
+					{ scratched_ts  : { $gte : month } } // or scratched this month
+				]
 			}
 		],
 		level : 'month'
 	}
 
 	const yearFilter = {
-		$or : [
+		objective_date : { $lte : nextYear }, // migration
+		$and : [
 			{
-				objective_date : { // this year only
-					$gte : year,
-					$lte : nextYear
-				}
+				$or : [
+					{ progress 		: { $ne  : 1 } }, // not completed
+					{ completed_ts  : { $gte : year } } // or completed this year
+				]
 			},
 			{
-				objective_date : { $lte : nextYear }, // migration
-				progress : { $ne : 1 },
-				scratched : false
+				$or : [
+					{ scratched 	: false }, // not scratched
+					{ scratched_ts  : { $gte : year } } // or scratched this year
+				]
 			}
 		],
 		level : 'year'

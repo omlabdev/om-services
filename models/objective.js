@@ -1,6 +1,10 @@
 const mongoose = require ('mongoose');
 const ActivityModel = require('./activity');
 
+// define schemas
+require('./user');
+require('./task');
+
 const Schema = mongoose.Schema;
 
 const schema = new Schema({

@@ -51,7 +51,6 @@ function deleteRelatedObjectivesAndActivity(taskId) {
 
 function deleteRelatedActivity(metaKey, ids) {
 	const query = { meta : { $exists: true }, [`meta.${metaKey}`] : {$in : ids } };
-	console.log(query);
 	return ActivityModel.remove(query);
 }
 
