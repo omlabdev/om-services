@@ -14,22 +14,13 @@ const sha = require('sha');
  */
 exports.setup = (router) => {
 	router.post('/users/auth', exports.authorizeUser);
+	router.post('/users/auth-link', exports.authorizeUserWithLink);
 	router.post('/users/add', exports.createUser);
 	router.post('/users/:userId', exports.updateUser);
 	router.delete('/users/:userId', exports.disableUser);
 	router.get('/users', exports.getUsers);
 }
 
-exports.authorizer = function(username, password) {
-	return new Promise((resolve, reject) => {
-		UsersModel.findOne({ username, password })
-			.then((user) => {
-				if (!user) return reject({ error : new Error('invalid login') });
-				resolve({ user })
-			})
-			.catch((error) => { reject({ error }) })
-	})
-}
 
 /**
  * Verifies that the user exists and the auth information
@@ -45,19 +36,33 @@ exports.authorizer = function(username, password) {
  * @param  {Function} next 
  */
 exports.authMiddleware = function(req, res, next) {
-	if (req.url.endsWith('/auth') || req.method === 'OPTIONS') return next();
+	if (/(.*)\/auth(-token)?\/?$/.test(req.url) || req.method === 'OPTIONS') return next();
 
 	const token = (req.headers.authorization || '').replace('Basic:', '').trim();
 	
 	const [ encodedUsername, encodedPassword ] = token.split(':');
 	if (!encodedUsername || !encodedPassword) res.sendStatus(401);
 
-	const username = Buffer.from(encodedUsername, 'base64').toString(),
-		password = Buffer.from(encodedPassword, 'base64').toString();
+	const username = decodeUserAuthValue(encodedUsername),
+		  password = decodeUserAuthValue(encodedPassword);
 
 	exports.authorizer(username, password)
 		.then(() => { next() })
 		.catch((error) => res.sendStatus(401));
+}
+
+exports.authorizer = function(username, password) {
+	return UsersModel.findOne({ username, password })
+		.then((user) => {
+			if (!user) {
+				throw { error: new Error('invalid login') };
+			}
+			return { user }
+		})
+}
+
+function decodeUserAuthValue(encodedValue) {
+	return Buffer.from(encodedValue, 'base64').toString()
 }
 
 exports.authorizeUser = function(req, res) {
@@ -65,6 +70,16 @@ exports.authorizeUser = function(req, res) {
 	exports.authorizer(username, password)
 		.then(res.json.bind(res))
 		.catch(res.json.bind(res));
+}
+
+exports.authorizeUserWithLink = function(req, res) {
+	const { authToken } = req.body;
+	const [ username, password ] = authToken.split(':').map(decodeUserAuthValue);
+	exports.authorizer(username, password)
+		.then(res.json.bind(res))
+		.catch(e => {
+			res.json({ error : e.error.message });
+		})
 }
 
 exports.createUser = function(req, res) {
