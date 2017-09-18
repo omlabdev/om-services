@@ -14,6 +14,7 @@ var schema = new Schema({
 	created_by		: { type : Schema.Types.ObjectId, ref: 'User', required : true },
 	origin			: { type : String, required : true, lowercase : true },	// teamwork, trello, slack, email, web, ...
 	external_id		: { type : String, default : null },
+	external_url	: { type : String, default : null },
 
 	// when set to true, scratches any existing objective linked to it
 	deleted			: { type : Boolean, default : false },
