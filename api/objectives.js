@@ -66,7 +66,7 @@ exports.getObjectives = function(req, res) {
 	const all = req.route.path.endsWith('/all');
 
 	exports._getObjectives(year, month, day, all)
-		.then(objectivesByLevel => res.json({ objectives, query }))
+		.then(objectivesByLevel => res.json({ objectives : objectivesByLevel }))
 		.catch(error => { res.json({ error }) })
 }
 
