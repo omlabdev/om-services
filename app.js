@@ -11,9 +11,11 @@ mongoose.Promise = global.Promise;
 
 if (process.env.MONGODB_URI !== undefined) {
 	mongoose.connect(process.env.MONGODB_URI);
+	console.log('connecting to mLab');
 } else {
 	const DB_NAME = 'om', DB_HOST = 'localhost';
 	mongoose.connect('mongodb://' + DB_HOST + '/' + DB_NAME);
+	console.log('connecting to local database');
 }
 
 
@@ -53,6 +55,13 @@ const router = express.Router();
 const Api = require('./api/api');
 
 /**
+ * Token authorization if auth is ON
+ */
+if (Api.auth_on) {
+	router.use(require('./api/users').authMiddleware);
+}
+
+/**
  * API endpoints
  */
 const apis = ['tasks', 'projects', 'users', 'work_entries', 'objectives', 'activity'];
@@ -61,13 +70,6 @@ apis.forEach((api) => {
 })
 app.use(Api.root, router);
 console.log('currently exposing api v%s at %s', Api.version, Api.root);
-
-/**
- * Token authorization if auth is ON
- */
-if (Api.auth_on) {
-	router.use(require('./api/users').authMiddleware);
-}
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

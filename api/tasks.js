@@ -25,8 +25,8 @@ exports.createTask = function(req, res) {
 	const model = new TaskModel(taskData);
 	TaskModel.create(model)
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		});
 }
 
@@ -36,9 +36,8 @@ exports.deleteTask = function(req, res) {
 		.then(() => deleteRelatedActivity( 'task', [ObjectId(_id)] ))
 		.then(() => TaskModel.remove({ _id }))
 		.then(res.json.bind(res))
-		.catch(error => {
-			console.error(error);
-			res.json({ error })
+		.catch(e => {
+			res.json({ error: e.message })
 		})
 }
 
@@ -58,8 +57,8 @@ exports.updateTask = function(req, res) {
 	const _id = req.params.taskId;
 	TaskModel.update({ _id }, { $set : req.body })
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }
 
@@ -80,7 +79,7 @@ exports.getTasks = function(req, res) {
 		.limit(pageSize)
 		.populate('project')
 		.exec((error, tasks, count) => {
-			if (error) return res.json({ error });
+			if (error) return res.json({ error: error.message });
 
 			const cursor = { 
 				current_page : page,

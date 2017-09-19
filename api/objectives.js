@@ -1,6 +1,7 @@
 const moment = require('moment');
 const ObjectivesModel = require('./../models/objective');
 const { toObjects } = require('./../utils');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 /*
 	POST 	/api/{v}/objectives/add
@@ -16,6 +17,8 @@ const { toObjects } = require('./../utils');
 	GET 	/api/{v}/objectives/:year/:month/:day
 
 	GET 	/api/{v}/objectives/:year/:month/:day/all
+
+	GET 	/api/{v}/objectives/:year/:month/:day/summary
  */
 exports.setup = (router) => {
 	router.post('/objectives/add', exports.createObjective);
@@ -23,6 +26,7 @@ exports.setup = (router) => {
 	router.delete('/objectives/:objectiveId', exports.deleteObjective);
 	router.get('/objectives/:year/:month?/:day?', exports.getObjectives);
 	router.get('/objectives/:year/:month/:day/all', exports.getObjectives);
+	router.get('/objectives/:year/:month/:day/summary', exports.getObjectivesSummary);
 }
 
 
@@ -31,8 +35,8 @@ exports.createObjective = function(req, res) {
 	const model = new ObjectivesModel(objectiveData);
 	ObjectivesModel.create(model)
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		});
 }
 
@@ -40,8 +44,8 @@ exports.updateObjective = function(req, res) {
 	const _id = req.params.objectiveId;
 	ObjectivesModel.update({ _id }, { $set : req.body })
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }
 
@@ -51,28 +55,64 @@ exports.deleteObjective = function(req, res) {
 		.then(doc => {
 			doc.deleted = true;
 			doc.deleted_ts = Date.now();
-			doc.deleted_by = null; // TODO 
+			doc.deleted_by = req.currentUser;
 			doc.save()
 				.then(res.json.bind(res))
-				.catch((error) => { res.json({ error }) })
+				.catch((e) => { res.json({ error: e.message }) })
 		})
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }
 
 exports.getObjectives = function(req, res) {
 	const { year, month, day } = req.params;
 	const all = req.route.path.endsWith('/all');
+	const owner = req.currentUser._id;
 
-	exports._getObjectives(year, month, day, all)
+	exports._getObjectives(year, month, day, all, owner)
 		.then(objectivesByLevel => res.json({ objectives : objectivesByLevel }))
-		.catch(error => { res.json({ error }) })
+		.catch(e => { res.json({ error: e.message }) })
 }
 
-exports._getObjectives = function(year, month, day, all) {
-	const query = Object.assign({}, getQueryDateFilter(year, month, day, all), 
+exports.getObjectivesSummary = function(req, res) {
+	const { year, month, day } = req.params;
+	const owner = req.currentUser._id;
+
+	exports._getObjectives(year, month, day, false)
+		.then(objectivesByLevel => objectivesByLevel.day)
+		.then(objectives => { return exports.getSummary(objectives, owner) })
+		.then(summary => { res.json({ summary }) })
+		.catch(e => { res.json({ error: e.message }) });
+}
+
+exports.getSummary = function(allObjectives, owner) {
+	const objectives = allObjectives.filter(o => !o.scratched);
+	const ownerObjectives = objectives.filter(objective => 
+		objective.owners.filter(o => o._id.toString() == owner).length > 0
+	)
+	const countCompleted = (count, o) => count + Math.floor(o.progress);
+	const ownerCompleted = ownerObjectives.reduce(countCompleted, 0);
+	const everyoneCompleted = objectives.reduce(countCompleted, 0);
+	return { 
+		user : { 
+			completed : ownerCompleted,
+			count : ownerObjectives.length
+		},
+		everyone : {
+			completed : everyoneCompleted,
+			count : objectives.length
+		}
+	}
+}
+
+exports._getObjectives = function(year, month, day, all, owner) {
+	let query = Object.assign({}, getQueryDateFilter(year, month, day, all), 
 		{ deleted : false });
+
+	if (owner !== undefined) {
+		query.owners = ObjectId(owner);
+	}
 
 	return ObjectivesModel.find(query)
 		.populate('related_task owners created_by')
@@ -80,9 +120,10 @@ exports._getObjectives = function(year, month, day, all) {
 		.then((objectives) => groupByLevel(objectives));
 }
 
+
 function getQueryDateFilter(pYear, pMonth, pDay, all) {
-	const thisMonth = moment().format('MM');
-	const thisDay = moment().format('DD');
+	const thisMonth = moment.utc().format('MM');
+	const thisDay = moment.utc().format('DD');
 
 	const date = moment.utc(`${pYear}-${pMonth || thisMonth}-${pDay || thisDay}`, 'YYYY-MM-DD');
 
@@ -165,7 +206,7 @@ function getQueryDateFilter(pYear, pMonth, pDay, all) {
 }
 
 function groupByLevel(objectives) {
-	let grouped = {};
+	let grouped = { day: [], month: [], year: [] }; // prevent undefined
 	objectives.forEach((o) => {
 		if (!grouped[o.level]) grouped[o.level] = [];
 		grouped[o.level].push(o);

@@ -18,8 +18,8 @@ exports.createProject = function(req, res) {
 	const model = new ProjectModel(projectData);
 	ProjectModel.create(model)
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		});
 }
 
@@ -27,8 +27,8 @@ exports.updateProject = function(req, res) {
 	const _id = req.params.projectId;
 	ProjectModel.update({ _id }, { $set : req.body })
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }
 
@@ -37,7 +37,7 @@ exports.getProjects = function(req, res) {
 		.then((projects) => {
 			res.json({ projects })
 		})
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }

@@ -50,8 +50,8 @@ exports.getActivity = function(req, res) {
 		.skip(pageZero * pageSize)
 		.limit(pageSize)
 		.populate('user')
-		.exec((error, activity, count) => { 
-			if (error) return res.json({ error });
+		.exec((e, activity, count) => { 
+			if (e) return res.json({ error: e.message });
 
 			async.map(activity.map(a => a.toObject()), hydrateDescription, 
 				(hydrateError, mappedActivity) => {

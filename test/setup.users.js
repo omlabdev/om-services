@@ -18,7 +18,7 @@ exports.setupUsers = function(cb) {
 		}
 	]
 	const docs = []
-	async.each(users, (u, done) => UserModel.create(u, (e, doc) => {
+	async.eachSeries(users, (u, done) => UserModel.create(u, (e, doc) => {
 		docs.push(doc)
 		done(e);
 	}), (e) => {

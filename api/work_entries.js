@@ -19,8 +19,8 @@ exports.createWorkEntry = function(req, res) {
 	const model = new WorkEntryModel(entryData);
 	WorkEntryModel.create(model)
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		});
 }
 
@@ -28,8 +28,8 @@ exports.deleteWorkEntry = function(req, res) {
 	const _id = req.params.workEntryId;
 	WorkEntryModel.remove({ _id })
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		});
 }
 
@@ -39,7 +39,7 @@ exports.getWorkEntries = function(req, res) {
 		.then((entries) => {
 			res.json({ entries })
 		})
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }

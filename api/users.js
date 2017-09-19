@@ -1,5 +1,6 @@
 const UsersModel = require('./../models/user');
 const sha = require('sha');
+const api = require('./api');
 
 /*
 	POST	/api/{v}/users/auth
@@ -18,6 +19,7 @@ exports.setup = (router) => {
 	router.post('/users/add', exports.createUser);
 	router.post('/users/:userId', exports.updateUser);
 	router.delete('/users/:userId', exports.disableUser);
+	router.get('/users/auth-links', exports.getUserLinks);
 	router.get('/users', exports.getUsers);
 }
 
@@ -36,10 +38,12 @@ exports.setup = (router) => {
  * @param  {Function} next 
  */
 exports.authMiddleware = function(req, res, next) {
-	if (/(.*)\/auth(-token)?\/?$/.test(req.url) || req.method === 'OPTIONS') return next();
+	if (/users\/auth(-link(s)?)?\/?$/.test(req.url.toString()) || req.method === 'OPTIONS') {
+		return next();
+	}
 
 	const token = (req.headers.authorization || '').replace('Basic:', '').trim();
-	
+
 	const [ encodedUsername, encodedPassword ] = token.split(':');
 	if (!encodedUsername || !encodedPassword) res.sendStatus(401);
 
@@ -47,7 +51,10 @@ exports.authMiddleware = function(req, res, next) {
 		  password = decodeUserAuthValue(encodedPassword);
 
 	exports.authorizer(username, password)
-		.then(() => { next() })
+		.then(user => {
+			req.currentUser = user.toObject();
+		})
+		.then(() => next())
 		.catch((error) => res.sendStatus(401));
 }
 
@@ -55,9 +62,9 @@ exports.authorizer = function(username, password) {
 	return UsersModel.findOne({ username, password })
 		.then((user) => {
 			if (!user) {
-				throw { error: new Error('invalid login') };
+				throw new Error('invalid login');
 			}
-			return { user }
+			return user;
 		})
 }
 
@@ -65,21 +72,47 @@ function decodeUserAuthValue(encodedValue) {
 	return Buffer.from(encodedValue, 'base64').toString()
 }
 
+function encodeAuthValue(decodedValue) {
+	return new Buffer(decodedValue).toString('base64');
+}
+
 exports.authorizeUser = function(req, res) {
 	const { username, password } = req.body;
 	exports.authorizer(username, password)
-		.then(res.json.bind(res))
-		.catch(res.json.bind(res));
+		.then(user => res.json({ user }))
+		.catch(e => res.json({ error : e.message }));
 }
 
 exports.authorizeUserWithLink = function(req, res) {
 	const { authToken } = req.body;
 	const [ username, password ] = authToken.split(':').map(decodeUserAuthValue);
 	exports.authorizer(username, password)
-		.then(res.json.bind(res))
-		.catch(e => {
-			res.json({ error : e.error.message });
+		.then(user => res.json({ user }))
+		.catch(e => res.json({ error : e.message }))
+}
+
+exports.getUserLinks = function(req, res) {
+	UsersModel.find()
+		.then(docs => {
+			const links = [];
+			docs.forEach(doc => {
+				const username = doc.username;
+				const password = doc.password;
+				const encodedUsername = encodeAuthValue(username);
+				const encodedPassword = encodeAuthValue(password);
+				const id = doc._id.toString();
+				const link = `${api.app_domain}/login/${id}/${encodedUsername}:${encodedPassword}`;
+				links.push([username, link]);
+			})
+			return links;
 		})
+		.then(links => links.map(l => `<a href='${l[1]}' target='_blank'>${l[0]}</a>  ${l[1]}`))
+		.then(links => links.join('<br/><br/>'))
+		.then(links => {
+			res.set('Content-Type', 'text/html');
+			res.send(new Buffer(links));
+		})
+		.catch(e => res.json({ error: e.message }))
 }
 
 exports.createUser = function(req, res) {
@@ -91,8 +124,8 @@ exports.createUser = function(req, res) {
 	const model = new UsersModel(userData);
 	UsersModel.create(model)
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		});
 }
 
@@ -100,8 +133,8 @@ exports.updateUser = function(req, res) {
 	const _id = req.params.userId;
 	UsersModel.update({ _id }, { $set : req.body })
 		.then(res.json.bind(res))
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }
 
@@ -115,7 +148,7 @@ exports.getUsers = function(req, res) {
 		.then((users) => {
 			res.json({ users })
 		})
-		.catch((error) => {
-			res.json({ error })
+		.catch((e) => {
+			res.json({ error: e.message })
 		})
 }

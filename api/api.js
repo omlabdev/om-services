@@ -4,7 +4,11 @@
 	
 	version 	: '1.0',
 
-	auth_on		: true
+	auth_on		: true,
+
+	app_domain 	: process.env.NODE_ENV === 'production' 
+					? 'https://om-frontend.herokuapp.com' 
+					: 'http://localhost:3100'
 
 }
 
