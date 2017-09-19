@@ -101,7 +101,7 @@ exports.getUserLinks = function(req, res) {
 				const encodedUsername = encodeAuthValue(username);
 				const encodedPassword = encodeAuthValue(password);
 				const id = doc._id.toString();
-				const link = `${api.app_domain}/login/${id}/${encodedUsername}:${encodedPassword}`;
+				const link = `${api.app_domain}/#/login/${id}/${encodedUsername}:${encodedPassword}`;
 				links.push([username, link]);
 			})
 			return links;
