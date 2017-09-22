@@ -34,6 +34,7 @@ exports.createObjective = function(req, res) {
 	const objectiveData = req.body;
 	const model = new ObjectivesModel(objectiveData);
 	ObjectivesModel.create(model)
+		.then(doc => ObjectivesModel.populate(doc, {path: 'related_task'}))
 		.then(res.json.bind(res))
 		.catch((e) => {
 			res.json({ error: e.message })
