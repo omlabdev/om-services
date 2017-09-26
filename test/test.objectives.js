@@ -1,14 +1,14 @@
 const should = require('should');
 const ObjectivesApi = require('../api/objectives');
 const ObjectiveModel = require('../models/objective');
-const { setupUsers, dropUsers } = require('./setup.users');
+const { setupUsers, dropUsers } = require('./setup/setup.users');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const async = require('async');
 const moment = require('moment');
 const { 
 	setupObjectivesForDifferentOwners
-} = require('./setup.objectives');
+} = require('./setup/setup.objectives');
 
 
 describe('objectives', function() {

@@ -31,13 +31,11 @@ var schema = new Schema({
 require('mongoose-count-and-find')(schema);
 
 schema.post('save', (doc, next) => {
-	console.log('creating activity for new task');
 	const description = `%user.first_name% has created a new task: %meta.task.title%`,
 			type = 'task-create',
 			user = doc.created_by,
 			meta = { task : doc._id };
 	ActivityModel.create({ description, type, user, meta }, (err, res) => {
-		console.log(err);
 		next();
 	});
 })

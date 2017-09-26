@@ -1,5 +1,5 @@
 
-const UserModel = require('./../models/user');
+const UserModel = require('./../../models/user');
 const async = require('async');
 
 exports.setupUsers = function(cb) {

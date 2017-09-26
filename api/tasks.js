@@ -65,28 +65,55 @@ exports.updateTask = function(req, res) {
 exports.getTasks = function(req, res) {
 	const pageSize = 12;
 	const page = req.params.page || 1;
+	const query = JSON.parse(req.query.params || '{}');
+
+	exports._getTasksPage(page, pageSize, query)
+		.then(tasksPage => res.json(tasksPage))
+		.catch(error => res.json({ error : error.message }))
+}
+
+/**
+ * Returns a page of tasks.
+ * Returned tasks are not related to any objective.
+ * 
+ * @param  {Number} page     1-indexed page number
+ * @param  {Number} pageSize 
+ * @return {Promise}          
+ */
+exports._getTasksPage = function(page, pageSize, _query) {
 	const pageZero = page - 1;
-	
-	const query = Object.assign(
-		JSON.parse(req.query.params || '{}'), 
-		{
-			deleted : false
-		});
+	const query = Object.assign({}, _query, { deleted : false });
 
-	TaskModel.countAndFind(query)
-		.sort({created_ts:-1})
-		.skip(pageZero * pageSize)
-		.limit(pageSize)
-		.populate('project')
-		.exec((error, tasks, count) => {
-			if (error) return res.json({ error: error.message });
+	return exports.getTasksReferencedByObjectives()
+		.then(tasksWithObjective => {
+			// add _id filter to query
+			query._id = { $nin : tasksWithObjective };
 
-			const cursor = { 
-				current_page : page,
-				total_pages : Math.ceil(count/pageSize), 
-				count, 
-				page_size : pageSize 
-			};
-			res.json({ tasks, cursor });
+			return new Promise((resolve, reject) => {
+				TaskModel.countAndFind(query)
+					.sort({created_ts:-1})
+					.skip(pageZero * pageSize)
+					.limit(pageSize)
+					.populate('project')
+					.exec((error, docs, count) => {
+						if (error) return reject(error);
+
+						const cursor = { 
+							current_page : page,
+							total_pages : Math.ceil(count/pageSize), 
+							count, 
+							page_size : pageSize 
+						};
+						
+						const tasks = docs.map(t => t.toObject());
+						resolve({ tasks , cursor });
+					})
+			})
 		})
+}
+
+exports.getTasksReferencedByObjectives = function() {
+	return ObjectiveModel
+		.find({ related_task : {$ne : null}, deleted : false }, { related_task : 1 })
+		.then(results => results.map(r => r.related_task))
 }

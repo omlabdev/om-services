@@ -1,6 +1,6 @@
 const async = require('async');
 const moment = require('moment');
-const ObjectiveModel = require('../models/objective');
+const ObjectiveModel = require('../../models/objective');
 
 exports.setupObjectivesForToday = function() {
 	const todayDate = moment.utc().toDate();

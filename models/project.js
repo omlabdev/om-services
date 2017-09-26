@@ -3,9 +3,9 @@ var Schema = mongoose.Schema;
 
 var schema = new Schema({
 	name 			: { type : String, required : true },
-	hours_sold		: { type : Number, min : 1, required : true },
-	hours_sold_unit : { type : String, enum : ['monthly', 'total'], lowercase : true },
-	hourly_rate		: { type : Number, required : true, min : 1 },
+	hours_sold		: { type : Number, min : 0, required : true },
+	hours_sold_unit : { type : String, enum : ['monthly', 'total'], lowercase : true, default : 'total' },
+	hourly_rate		: { type : Number, required : true, min : 0 },
 
 	created_ts		: { type : Date, default : Date.now }
 });
