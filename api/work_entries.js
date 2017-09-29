@@ -35,7 +35,7 @@ exports.deleteWorkEntry = function(req, res) {
 
 exports.getWorkEntries = function(req, res) {
 	const objective = req.params.objectiveId;
-	WorkEntryModel.find({ objective })
+	WorkEntryModel.find({ objective }).populate('user')
 		.then((entries) => {
 			res.json({ entries })
 		})
