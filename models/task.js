@@ -10,6 +10,9 @@ var schema = new Schema({
 	// every task belongs to a projec. we might have ON projects for internal tasks
 	project			: { type: Schema.Types.ObjectId, ref: 'Project', required : true },
 
+	// an option array of URLs
+	attachments 	: { type: [String], default: [] },
+
 	created_ts 		: { type : Date, default : Date.now },
 	created_by		: { type : Schema.Types.ObjectId, ref: 'User', required : true },
 	origin			: { type : String, required : true, lowercase : true },	// teamwork, trello, slack, email, web, ...
