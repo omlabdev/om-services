@@ -65,7 +65,9 @@ exports.updateTask = function(req, res) {
 exports.getTasks = function(req, res) {
 	const pageSize = 12;
 	const page = req.params.page || 1;
-	const query = JSON.parse(req.query.params || '{}');
+	const query = req.query || {};
+
+	if (query.title) query.title = {$regex : query.title};
 
 	exports._getTasksPage(page, pageSize, query)
 		.then(tasksPage => res.json(tasksPage))
