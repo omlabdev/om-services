@@ -44,7 +44,7 @@ const schema = new Schema({
 
 
 schema.virtual('title').get(function() {
-	return this.related_task ? this.related_task.title : this.no_task_title ;
+	return this.related_task ? this.related_task.title : this.no_task_title;
 });
 
 schema.post('save', (doc, next) => {
