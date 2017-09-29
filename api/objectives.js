@@ -1,5 +1,6 @@
 const moment = require('moment');
 const ObjectivesModel = require('./../models/objective');
+const TasksModel = require('./../models/task');
 const { toObjects } = require('./../utils');
 const ObjectId = require('mongoose').Types.ObjectId;
 
@@ -116,7 +117,12 @@ exports._getObjectives = function(year, month, day, all, owner) {
 	}
 
 	return ObjectivesModel.find(query)
-		.populate('related_task owners created_by')
+		.populate('related_task created_by owners')
+		.then(objectives => TasksModel.populate(objectives, { // populate deeper level 
+			path: 'related_task.project',
+			select: 'name',
+			model: 'Project'
+		}))
 		.then(toObjects)
 		.then((objectives) => groupByLevel(objectives));
 }
