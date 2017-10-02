@@ -155,11 +155,7 @@ exports.getUserLinks = function(req, res) {
 			docs.forEach(doc => {
 				const username = doc.username;
 				const password = doc.password;
-				const encodedUsername = encodeAuthValue(username);
-				const encodedPassword = encodeAuthValue(password);
-				const id = doc._id.toString();
-				const link = `${api.app_domain}/#/login/${id}/${encodedUsername}:${encodedPassword}`;
-				links.push([username, link]);
+				links.push([username, getAuthLinkForUsernameAndPassword(username, password)]);
 			})
 			return links;
 		})
@@ -170,6 +166,21 @@ exports.getUserLinks = function(req, res) {
 			res.send(new Buffer(links));
 		})
 		.catch(e => res.json({ error: e.message }))
+}
+
+exports.getCurrentUserAuthLink = function(req, res) {
+	UsersModel.findOne({ username : req.currentUser.username })
+		.then(doc => {
+			res.json({ link : getAuthLinkForUsernameAndPassword(doc.username, doc.password) });
+		})
+}
+
+function getAuthLinkForUsernameAndPassword(username, password) {
+	const encodedUsername = encodeAuthValue(username);
+	const encodedPassword = encodeAuthValue(password);
+	const id = doc._id.toString();
+	const link = `${api.app_domain}/#/login/${id}/${encodedUsername}:${encodedPassword}`;
+	return link;
 }
 
 exports.createUser = function(req, res) {
