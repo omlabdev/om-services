@@ -22,6 +22,7 @@ exports.setup = (router) => {
 	router.post('/users/:userId', exports.updateUser);
 	router.delete('/users/:userId', exports.disableUser);
 	router.get('/users/auth-links', exports.getUserLinks);
+	router.get('/users/auth-link', exports.getCurrentUserAuthLink);
 	router.get('/users', exports.getUsers);
 }
 
@@ -40,9 +41,15 @@ exports.setup = (router) => {
  * @param  {Function} next 
  */
 exports.authMiddleware = function(req, res, next) {
-	if (/users\/auth(-link(s)?)?\/?$/.test(req.url.toString()) || req.method === 'OPTIONS') {
-		return next();
-	}
+	const passthrou = [
+		/users\/auth\/?$/.test(req.url.toString()),
+		/users\/auth-links\/?$/.test(req.url.toString()),
+		/users\/auth-link\/?$/.test(req.url.toString()) && req.method === 'POST',
+		req.method === 'OPTIONS'
+	]
+
+	const canPass = passthrou.reduce((prev, v) => v || prev, false);
+	if (canPass) return next();
 
 	const token = (req.headers.authorization || '').trim();
 	if (!token) return res.sendStatus(401);
@@ -155,7 +162,7 @@ exports.getUserLinks = function(req, res) {
 			docs.forEach(doc => {
 				const username = doc.username;
 				const password = doc.password;
-				links.push([username, getAuthLinkForUsernameAndPassword(username, password)]);
+				links.push([username, getAuthLinkForUsernameAndPassword(doc._id, username, password)]);
 			})
 			return links;
 		})
@@ -171,15 +178,14 @@ exports.getUserLinks = function(req, res) {
 exports.getCurrentUserAuthLink = function(req, res) {
 	UsersModel.findOne({ username : req.currentUser.username })
 		.then(doc => {
-			res.json({ link : getAuthLinkForUsernameAndPassword(doc.username, doc.password) });
+			res.json({ link : getAuthLinkForUsernameAndPassword(doc._id, doc.username, doc.password) });
 		})
 }
 
-function getAuthLinkForUsernameAndPassword(username, password) {
+function getAuthLinkForUsernameAndPassword(id, username, password) {
 	const encodedUsername = encodeAuthValue(username);
 	const encodedPassword = encodeAuthValue(password);
-	const id = doc._id.toString();
-	const link = `${api.app_domain}/#/login/${id}/${encodedUsername}:${encodedPassword}`;
+	const link = `${api.app_domain}/#/login/${id.toString()}/${encodedUsername}:${encodedPassword}`;
 	return link;
 }
 
