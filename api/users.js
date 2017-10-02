@@ -2,6 +2,8 @@ const UsersModel = require('./../models/user');
 const sha = require('sha');
 const api = require('./api');
 
+const SLACK_TOKEN = 'biTlZ0Ica2fRNA4NFYLAWK33';
+
 /*
 	POST	/api/{v}/users/auth
 
@@ -42,22 +44,77 @@ exports.authMiddleware = function(req, res, next) {
 		return next();
 	}
 
-	const token = (req.headers.authorization || '').replace('Basic:', '').trim();
+	const token = (req.headers.authorization || '').trim();
+	if (!token) return res.sendStatus(401);
 
-	const [ encodedUsername, encodedPassword ] = token.split(':');
-	if (!encodedUsername || !encodedPassword) res.sendStatus(401);
+	if (token.toLowerCase().startsWith('basic:')) 
+		return doTokenAuth(token, req, res, next);
+	else if (token.toLowerCase().startsWith('slack:'))
+		return doSlackAuth(token, req, res, next);
+
+	return res.sendStatus(401);
+}
+
+/**
+ * Authorizes a user using a Basic auth token with
+ * encoded user and password.
+ * 
+ * @param  {String}   token 
+ * @param  {Objecto}   req   
+ * @param  {Objecto}   res   
+ * @param  {Function} next  
+ */
+function doTokenAuth(token, req, res, next) {
+	const auth = token.replace(/Basic:/i, '');
+
+	const [ encodedUsername, encodedPassword ] = auth.split(':');
+	if (!encodedUsername || !encodedPassword) 
+		return res.sendStatus(401);
 
 	const username = decodeUserAuthValue(encodedUsername),
 		  password = decodeUserAuthValue(encodedPassword);
 
 	exports.authorizer(username, password)
 		.then(user => {
+			if (!user) return res.sendStatus(401);
 			req.currentUser = user.toObject();
+			next();
 		})
-		.then(() => next())
 		.catch((error) => res.sendStatus(401));
 }
 
+/**
+ * Authorizes a user using a Slack auth token with
+ * slack user and slack app token
+ * 
+ * @param  {String}   token 
+ * @param  {Objecto}   req   
+ * @param  {Objecto}   res   
+ * @param  {Function} next  
+ */
+function doSlackAuth(token, req, res, next) {
+	const auth = token.replace(/Slack:/i, '');
+	const [ slackUsername, slackToken ] = auth.split(':');
+
+	if (!slackUsername || !slackToken || slackToken !== SLACK_TOKEN)
+		return res.sendStatus(401);
+
+	UsersModel.findOne({ slack_account: slackUsername.trim() })
+		.then(user => {
+			if (!user) return res.sendStatus(401);
+			req.currentUser = user.toObject();
+			next();
+		})
+		.catch((error) => res.sendStatus(401));
+}
+
+/**
+ * Looks in the DB for a user with the given user and
+ * password. Returns a mongo promise.
+ * 
+ * @param  {String} username 
+ * @param  {String} password 
+ */
 exports.authorizer = function(username, password) {
 	return UsersModel.findOne({ username, password })
 		.then((user) => {

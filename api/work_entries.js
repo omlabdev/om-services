@@ -16,6 +16,7 @@ exports.setup = (router) => {
 exports.createWorkEntry = function(req, res) {
 	const entryData = req.body;
 	entryData.objective = req.params.objectiveId;
+	if (!entryData.user) entryData.user = req.currentUser._id.toString();
 	const model = new WorkEntryModel(entryData);
 	WorkEntryModel.create(model)
 		.then(res.json.bind(res))
@@ -35,7 +36,9 @@ exports.deleteWorkEntry = function(req, res) {
 
 exports.getWorkEntries = function(req, res) {
 	const objective = req.params.objectiveId;
-	WorkEntryModel.find({ objective }).populate('user')
+	WorkEntryModel.find({ objective })
+		.populate('user')
+		.sort({ created_ts : -1 })
 		.then((entries) => {
 			res.json({ entries })
 		})
