@@ -56,6 +56,8 @@ exports.authMiddleware = function(req, res, next) {
 	const token = (req.headers.authorization || '').trim();
 	if (!token) return res.sendStatus(401);
 
+	console.log("authenticating %s", token);
+	
 	if (token.toLowerCase().startsWith('basic:')) 
 		return doTokenAuth(token, req, res, next);
 	else if (token.toLowerCase().startsWith('slack:'))
@@ -110,8 +112,6 @@ function doIntegrationAuth(token, service, req, res, next) {
 	const serviceToPrefix = { slack: 'Slack', trello: 'Trello', git: 'Git' };
 	const serviceToToken = { slack: SLACK_TOKEN, trello: TRELLO_TOKEN, git: GIT_TOKEN };
 	const serviceToUserField = { slack: 'slack_account', trello: 'trello_account', git: 'git_account' };
-
-	console.log("authenticating %s | %s : %s", service, username, theToken);
 
 	const auth = token.replace('/'+serviceToPrefix[service]+':/i', '');
 	const [ username, theToken ] = auth.split(':');
