@@ -64,7 +64,7 @@ if (Api.auth_on) {
 /**
  * API endpoints
  */
-const apis = ['tasks', 'projects', 'users', 'work_entries', 'objectives', 'activity'];
+const apis = ['tasks', 'projects', 'users', 'work_entries', 'objectives', 'activity', 'integrations'];
 apis.forEach((api) => { 
 	require(`./api/${api}`).setup(router);
 })
