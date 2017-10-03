@@ -4,6 +4,7 @@ const api = require('./api');
 
 const SLACK_TOKEN = 'biTlZ0Ica2fRNA4NFYLAWK33';
 const GIT_TOKEN = 'lkjLKNLKKNKABUHIUHS767823'; // just a plain ol' made-up token
+const TRELLO_TOKEN = 'l897as98KJABHJkhajksh&asdkj-902817ty3hj'; // just another plain ol' made-up token
 
 /*
 	POST	/api/{v}/users/auth
@@ -58,9 +59,11 @@ exports.authMiddleware = function(req, res, next) {
 	if (token.toLowerCase().startsWith('basic:')) 
 		return doTokenAuth(token, req, res, next);
 	else if (token.toLowerCase().startsWith('slack:'))
-		return doSlackAuth(token, req, res, next);
+		return doIntegrationAuth(token, 'slack', req, res, next);
 	else if (token.toLowerCase().startsWith('git:'))
-		return doGitAuth(token, req, res, next);
+		return doIntegrationAuth(token, 'git', req, res, next);
+	else if (token.toLowerCase().startsWith('trello:'))
+		return doIntegrationAuth(token, 'trello', req, res, next);
 
 	return res.sendStatus(401);
 }
@@ -94,48 +97,27 @@ function doTokenAuth(token, req, res, next) {
 }
 
 /**
- * Authorizes a user using a Slack auth token with
- * slack user and slack app token
+ * Authorizes a user using one of the integration auth tokens
+ * and one of the user's external account (slack, trello, git, ...)
  * 
  * @param  {String}   token 
+ * @param  {String}   service 
  * @param  {Objecto}   req   
  * @param  {Objecto}   res   
  * @param  {Function} next  
  */
-function doSlackAuth(token, req, res, next) {
-	const auth = token.replace(/Slack:/i, '');
-	const [ slackUsername, slackToken ] = auth.split(':');
+function doIntegrationAuth(token, service, req, res, next) {
+	const serviceToPrefix = { slack: 'Slack', trello: 'Trello', git: 'Git' };
+	const serviceToToken = { slack: SLACK_TOKEN, trello: TRELLO_TOKEN, git: GIT_TOKEN };
+	const serviceToUserField = { slack: 'slack_account', trello: 'trello_account', git: 'git_account' };
 
-	if (!slackUsername || !slackToken || slackToken !== SLACK_TOKEN)
+	const auth = token.replace('/'+serviceToPrefix[service]+':/i', '');
+	const [ username, theToken ] = auth.split(':');
+
+	if (!username || !theToken || theToken !== serviceToToken[service])
 		return res.sendStatus(401);
 
-	UsersModel.findOne({ slack_account: slackUsername.trim() })
-		.then(user => {
-			if (!user) return res.sendStatus(401);
-			req.currentUser = user.toObject();
-			next();
-		})
-		.catch((error) => res.sendStatus(401));
-}
-
-
-/**
- * Authorizes a user using a Git auth token with
- * git user and git token
- * 
- * @param  {String}   token 
- * @param  {Objecto}   req   
- * @param  {Objecto}   res   
- * @param  {Function} next  
- */
-function doGitAuth(token, req, res, next) {
-	const auth = token.replace(/Git:/i, '');
-	const [ username, gitToken ] = auth.split(':');
-
-	if (!username || !gitToken || gitToken !== GIT_TOKEN)
-		return res.sendStatus(401);
-
-	UsersModel.findOne({ git_account: username.trim() })
+	UsersModel.findOne({ [serviceToUserField[service]]: username.trim() })
 		.then(user => {
 			if (!user) return res.sendStatus(401);
 			req.currentUser = user.toObject();
