@@ -3,6 +3,7 @@ const sha = require('sha');
 const api = require('./api');
 
 const SLACK_TOKEN = 'biTlZ0Ica2fRNA4NFYLAWK33';
+const GIT_TOKEN = 'lkjLKNLKKNKABUHIUHS767823'; // just a plain ol' made-up token
 
 /*
 	POST	/api/{v}/users/auth
@@ -58,6 +59,8 @@ exports.authMiddleware = function(req, res, next) {
 		return doTokenAuth(token, req, res, next);
 	else if (token.toLowerCase().startsWith('slack:'))
 		return doSlackAuth(token, req, res, next);
+	else if (token.toLowerCase().startsWith('git:'))
+		return doGitAuth(token, req, res, next);
 
 	return res.sendStatus(401);
 }
@@ -107,6 +110,32 @@ function doSlackAuth(token, req, res, next) {
 		return res.sendStatus(401);
 
 	UsersModel.findOne({ slack_account: slackUsername.trim() })
+		.then(user => {
+			if (!user) return res.sendStatus(401);
+			req.currentUser = user.toObject();
+			next();
+		})
+		.catch((error) => res.sendStatus(401));
+}
+
+
+/**
+ * Authorizes a user using a Git auth token with
+ * git user and git token
+ * 
+ * @param  {String}   token 
+ * @param  {Objecto}   req   
+ * @param  {Objecto}   res   
+ * @param  {Function} next  
+ */
+function doGitAuth(token, req, res, next) {
+	const auth = token.replace(/Git:/i, '');
+	const [ username, gitToken ] = auth.split(':');
+
+	if (!username || !gitToken || gitToken !== GIT_TOKEN)
+		return res.sendStatus(401);
+
+	UsersModel.findOne({ git_account: username.trim() })
 		.then(user => {
 			if (!user) return res.sendStatus(401);
 			req.currentUser = user.toObject();

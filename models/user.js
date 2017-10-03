@@ -12,7 +12,7 @@ var schema = new Schema({
 	email 			: { type : String, lowercase : true, required : true, unique : true },
 	slack_account 	: { type : String, lowercase : true },
 	trello_account	: { type : String, lowercase : true },
-	git_user		: { type : String, lowercase : true },
+	git_account		: { type : String, lowercase : true },
 	
 	enabled 		: { type : Boolean, default : true }
 },{
