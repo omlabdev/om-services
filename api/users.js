@@ -4,7 +4,7 @@ const api = require('./api');
 
 const SLACK_TOKEN = 'biTlZ0Ica2fRNA4NFYLAWK33';
 const GIT_TOKEN = 'lkjLKNLKKNKABUHIUHS767823'; // just a plain ol' made-up token
-const TRELLO_TOKEN = 'l897as98KJABHJkhajksh&asdkj-902817ty3hj'; // just another plain ol' made-up token
+const TRELLO_TOKEN = 'l897as98KJABHJkhajkshasdkj-902817ty3hj'; // just another plain ol' made-up token
 
 /*
 	POST	/api/{v}/users/auth
@@ -57,7 +57,7 @@ exports.authMiddleware = function(req, res, next) {
 	if (!token) return res.sendStatus(401);
 
 	console.log("authenticating %s", token);
-	
+
 	if (token.toLowerCase().startsWith('basic:')) 
 		return doTokenAuth(token, req, res, next);
 	else if (token.toLowerCase().startsWith('slack:'))
