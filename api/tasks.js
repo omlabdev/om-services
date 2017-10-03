@@ -22,6 +22,7 @@ exports.setup = (router) => {
 
 exports.createTask = function(req, res) {
 	const taskData = req.body;
+	taskData.created_by = req.currentUser._id;
 	const model = new TaskModel(taskData);
 	TaskModel.create(model)
 		.then(res.json.bind(res))
