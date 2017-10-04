@@ -113,7 +113,7 @@ function doIntegrationAuth(token, service, req, res, next) {
 	const serviceToToken = { slack: SLACK_TOKEN, trello: TRELLO_TOKEN, git: GIT_TOKEN };
 	const serviceToUserField = { slack: 'slack_account', trello: 'trello_account', git: 'git_account' };
 
-	const auth = token.replace('/'+serviceToPrefix[service]+':/i', '');
+	const auth = token.replace(new RegExp(serviceToPrefix[service]+':', 'i'), '');
 	const [ username, theToken ] = auth.split(':');
 
 	if (!username || !theToken || theToken !== serviceToToken[service])
