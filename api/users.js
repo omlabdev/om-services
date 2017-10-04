@@ -5,6 +5,7 @@ const api = require('./api');
 const SLACK_TOKEN = 'biTlZ0Ica2fRNA4NFYLAWK33';
 const GIT_TOKEN = 'lkjLKNLKKNKABUHIUHS767823'; // just a plain ol' made-up token
 const TRELLO_TOKEN = 'lkjLKNLKKNKABUHIUHS767824'; // just another plain ol' made-up token
+const EMAIL_TOKEN = '9078tyausgdhjkn89b38998iuyKHJGYU897'; // made-up token
 
 /*
 	POST	/api/{v}/users/auth
@@ -66,6 +67,8 @@ exports.authMiddleware = function(req, res, next) {
 		return doIntegrationAuth(token, 'git', req, res, next);
 	else if (token.toLowerCase().startsWith('trello:'))
 		return doIntegrationAuth(token, 'trello', req, res, next);
+	else if (token.toLowerCase().startsWith('email:'))
+		return doIntegrationAuth(token, 'email', req, res, next);
 
 	return res.sendStatus(401);
 }
@@ -109,9 +112,9 @@ function doTokenAuth(token, req, res, next) {
  * @param  {Function} next  
  */
 function doIntegrationAuth(token, service, req, res, next) {
-	const serviceToPrefix = { slack: 'Slack', trello: 'Trello', git: 'Git' };
-	const serviceToToken = { slack: SLACK_TOKEN, trello: TRELLO_TOKEN, git: GIT_TOKEN };
-	const serviceToUserField = { slack: 'slack_account', trello: 'trello_account', git: 'git_account' };
+	const serviceToPrefix = { slack: 'Slack', trello: 'Trello', git: 'Git', email: 'Email' };
+	const serviceToToken = { slack: SLACK_TOKEN, trello: TRELLO_TOKEN, git: GIT_TOKEN, email: EMAIL_TOKEN };
+	const serviceToUserField = { slack: 'slack_account', trello: 'trello_account', git: 'git_account', email: 'email' };
 
 	const auth = token.replace(new RegExp(serviceToPrefix[service]+':', 'i'), '');
 	const [ username, theToken ] = auth.split(':');
