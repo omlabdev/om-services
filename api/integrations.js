@@ -10,6 +10,7 @@ var IntegrationModel = require('./../models/integration');
 exports.setup = (router) => {
 	router.post('/admin/integrations/add', exports.createIntegration);
 	router.post('/admin/integrations/:integrationId', exports.updateIntegration);
+	router.delete('/admin/integrations/:integrationId', exports.deleteIntegration);
 	router.get('/admin/integrations', exports.getIntegrations);
 }
 
@@ -30,6 +31,15 @@ exports.updateIntegration = function(req, res) {
 		.catch((e) => {
 			res.json({ error: e.message })
 		})
+}
+
+exports.deleteIntegration = function(req, res) {
+	const _id = req.params.integrationId;
+	IntegrationModel.remove({ _id })
+		.then(res.json.bind(res))
+		.catch((e) => {
+			res.json({ error: e.message })
+		});
 }
 
 exports.createIntegration = function(req, res) {
