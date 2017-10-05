@@ -4,9 +4,12 @@ var IntegrationModel = require('./../models/integration');
 	GET		/api/{v}/admin/integrations
 
 	POST 	/api/{v}/admin/integrations/add
+
+	POST 	/api/{v}/admin/integrations/:integrationId
  */
 exports.setup = (router) => {
 	router.post('/admin/integrations/add', exports.createIntegration);
+	router.post('/admin/integrations/:integrationId', exports.updateIntegration);
 	router.get('/admin/integrations', exports.getIntegrations);
 }
 
@@ -15,6 +18,15 @@ exports.getIntegrations = function(req, res) {
 		.then((integrations) => {
 			res.json({ integrations })
 		})
+		.catch((e) => {
+			res.json({ error: e.message })
+		})
+}
+
+exports.updateIntegration = function(req, res) {
+	const _id = req.params.integrationId;
+	IntegrationModel.update({ _id }, { $set : req.body })
+		.then(res.json.bind(res))
 		.catch((e) => {
 			res.json({ error: e.message })
 		})
