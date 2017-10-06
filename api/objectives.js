@@ -33,6 +33,14 @@ exports.setup = (router) => {
 
 exports.createObjective = function(req, res) {
 	const objectiveData = req.body;
+	// assign creator as owner if no ownwers
+	if (!objectiveData.owners) { 
+		objectiveData.owners = [req.currentUser._id];
+	}
+	// assign current user as creator if not specified
+	if (!objectiveData.created_by) {
+		objectiveData.created_by = req.currentUser._id;
+	}
 	const model = new ObjectivesModel(objectiveData);
 	ObjectivesModel.create(model)
 		.then(doc => ObjectivesModel.populate(doc, {path: 'related_task'}))
