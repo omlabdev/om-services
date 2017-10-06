@@ -3,6 +3,7 @@ const ObjectivesModel = require('./../models/objective');
 const TasksModel = require('./../models/task');
 const { toObjects } = require('./../utils');
 const ObjectId = require('mongoose').Types.ObjectId;
+const ActivityApi = require('./activity');
 
 /*
 	POST 	/api/{v}/objectives/add
@@ -32,7 +33,20 @@ exports.setup = (router) => {
 
 
 exports.createObjective = function(req, res) {
-	const objectiveData = req.body;
+	const objectiveData = setCreateDefaults(req.body, req);
+	
+	const model = new ObjectivesModel(objectiveData);
+	const createP = ObjectivesModel.create(model)
+		.then(doc => ObjectivesModel.populate(doc, {path: 'related_task'}))
+	const activityP = createP.then(doc => 
+		createActivity(doc, doc.created_by, 'created'));
+
+	Promise.all([createP, activityP])
+		.then(([doc, _]) => { res.json(doc) })
+		.catch(e => { res.json({ error: e.message }) })
+}
+
+function setCreateDefaults(objectiveData, req) {
 	// assign creator as owner if no ownwers
 	if (!objectiveData.owners) { 
 		objectiveData.owners = [req.currentUser._id];
@@ -41,38 +55,40 @@ exports.createObjective = function(req, res) {
 	if (!objectiveData.created_by) {
 		objectiveData.created_by = req.currentUser._id;
 	}
-	const model = new ObjectivesModel(objectiveData);
-	ObjectivesModel.create(model)
-		.then(doc => ObjectivesModel.populate(doc, {path: 'related_task'}))
-		.then(res.json.bind(res))
-		.catch((e) => {
-			res.json({ error: e.message })
-		});
+	return objectiveData;
 }
 
 exports.updateObjective = function(req, res) {
 	const _id = req.params.objectiveId;
-	ObjectivesModel.update({ _id }, { $set : req.body })
-		.then(res.json.bind(res))
-		.catch((e) => {
-			res.json({ error: e.message })
-		})
+
+	// assuming that an objective cannot be modified after
+	// completion, if progress === 1 the objective was completed
+	// now
+	const event = req.body.progress === 1 ? 'completed' : 'updated';
+
+	const updateP = ObjectivesModel.findByIdAndUpdate(_id, { $set : req.body })
+		.then(doc => ObjectivesModel.populate(doc, {path: 'related_task'}));
+	const activityP = updateP.then(doc => 
+		createActivity(doc, req.currentUser._id, event));
+
+	Promise.all([updateP, activityP])
+		.then(([doc, _]) => { res.json(doc) })
+		.catch(e => { res.json({ error: e.message }) })
 }
 
 exports.deleteObjective = function(req, res) {
 	const _id = req.params.objectiveId;
-	ObjectivesModel.findOne({ _id })
-		.then(doc => {
-			doc.deleted = true;
-			doc.deleted_ts = Date.now();
-			doc.deleted_by = req.currentUser;
-			doc.save()
-				.then(res.json.bind(res))
-				.catch((e) => { res.json({ error: e.message }) })
+	const deleteP = ObjectivesModel.findByIdAndUpdate(_id, {
+			deleted:true, 
+			deleted_ts: Date.now(), 
+			deleted_by: req.currentUser._id
 		})
-		.catch((e) => {
-			res.json({ error: e.message })
-		})
+	const activityP = deleteP.then(doc => 
+		createActivity(doc, req.currentUser._id, 'deleted'))
+
+	Promise.all([deleteP, activityP])
+		.then(([doc, _]) => { res.json(doc) })
+		.catch((e) => { res.json({ error: e.message }) })
 }
 
 exports.getObjectives = function(req, res) {
@@ -229,3 +245,12 @@ function groupByLevel(objectives) {
 	return grouped;
 }
 
+function createActivity(objective, userId, event) {
+	const action = `has ${event} an objective`;
+	return ActivityApi.createActivity({
+		description: `%user.first_name% ${action}: %meta.objective.title%`,
+		type: `objective-${event}`,
+		user: userId.toString(),
+		meta: { objective : objective._id } 
+	})
+}

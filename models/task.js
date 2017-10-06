@@ -15,6 +15,7 @@ var schema = new Schema({
 
 	created_ts 		: { type : Date, default : Date.now },
 	created_by		: { type : Schema.Types.ObjectId, ref: 'User', required : true },
+
 	origin			: { type : String, required : true, lowercase : true },	// teamwork, trello, slack, email, web, ...
 	external_id		: { type : String, default : null },
 	external_url	: { type : String, default : null },
@@ -32,15 +33,5 @@ var schema = new Schema({
 });
 
 require('mongoose-count-and-find')(schema);
-
-schema.post('save', (doc, next) => {
-	const description = `%user.first_name% has created a new task: %meta.task.title%`,
-			type = 'task-create',
-			user = doc.created_by,
-			meta = { task : doc._id };
-	ActivityModel.create({ description, type, user, meta }, (err, res) => {
-		next();
-	});
-})
 
 module.exports = mongoose.model('Task', schema);

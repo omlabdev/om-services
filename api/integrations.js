@@ -1,4 +1,7 @@
-var IntegrationModel = require('./../models/integration');
+const IntegrationModel = require('./../models/integration');
+const ActivityModel = require('./../models/activity');
+const ActivityApi = require('./activity');
+const ObjectId = require('mongoose').Types.ObjectId;
 
 /*
 	GET		/api/{v}/admin/integrations
@@ -26,30 +29,70 @@ exports.getIntegrations = function(req, res) {
 
 exports.updateIntegration = function(req, res) {
 	const _id = req.params.integrationId;
-	IntegrationModel.update({ _id }, { $set : req.body })
-		.then(res.json.bind(res))
-		.catch((e) => {
-			res.json({ error: e.message })
-		})
+	
+	const updateP = IntegrationModel.findByIdAndUpdate(_id, {$set: req.body});
+	const activityP = updateP.then(doc => 
+		createActivity(doc, req.currentUser._id, 'updated'));
+	
+	Promise.all([updateP, activityP])
+		.then(([doc, _]) => { res.json(doc) })
+		.catch((e) => { res.json({ error: e.message }) })
 }
 
 exports.deleteIntegration = function(req, res) {
 	const _id = req.params.integrationId;
-	IntegrationModel.remove({ _id })
-		.then(res.json.bind(res))
-		.catch((e) => {
-			res.json({ error: e.message })
-		});
+	
+	const findP = IntegrationModel.findById(_id);
+	const deleteP = findP
+		.then(() => deleteRelatedActivity(ObjectId(_id)))
+		.then(() => IntegrationModel.remove({ _id }));
+
+	const activityP = findP.then(doc => 
+		createDeleteActivity(doc, req.currentUser._id));
+
+	Promise.all([findP, deleteP, activityP])
+		.then(([doc, result, _]) => { res.json(result) })
+		.catch((e) => { res.json({ error: e.message }) });
+}
+
+function deleteRelatedActivity(integrationId) {
+	const query = { meta : { $exists: true }, 'meta.integration' : integrationId };
+	return ActivityModel.remove(query);
 }
 
 exports.createIntegration = function(req, res) {
-	const integrationData = req.body;
-	integrationData.created_by = req.currentUser;
+	const integrationData = setCreateDefaults(req.body, req);
 	const model = new IntegrationModel(integrationData);
-	IntegrationModel.create(model)
+
+	const createP = IntegrationModel.create(model)
 		.then(doc => IntegrationModel.populate(doc, {path: 'created_by'}))
-		.then(integration => { res.json(integration) })
-		.catch((e) => {
-			res.json({ error: e.message })
-		});
+	const activityP = createP.then(doc => 
+		createActivity(doc, doc.created_by._id, 'created'))
+
+	Promise.all([createP, activityP])
+		.then(([doc, _]) => { res.json(doc) })
+		.catch((e) => { res.json({ error: e.message }) });
+}
+
+function setCreateDefaults(integrationData, req) {
+	integrationData.created_by = req.currentUser;
+	return integrationData;
+}
+
+function createActivity(integration, userId, event) {
+	const action = `has ${event} an integration`;
+	return ActivityApi.createActivity({
+		description: `%user.first_name% ${action} with ${integration.service}: %meta.integration.name%`,
+		type: `integration-${event}`,
+		user: userId.toString(),
+		meta: { integration : integration._id } 
+	})
+}
+
+function createDeleteActivity(integration, userId) {
+	return ActivityApi.createActivity({
+		description: `%user.first_name% has deleted an integration with ${integration.service}: ${integration.name}`,
+		type: `integration-deleted`,
+		user: userId.toString()
+	})
 }

@@ -25,7 +25,7 @@ const schema = new Schema({
 	completed_ts 	: { type : Date, default : null },
 	scratched 		: { type : Boolean, default : false },
 	scratched_ts	: { type : Date, default : null },
-	scratched_by	: { type : Schema.Types.ObjectId, ref: 'User', default: null },
+	scratched_by	: { type : Schema.Types.ObjectId, ref: 'User', default : null },
 
 	created_by		: { type : Schema.Types.ObjectId, ref: 'User', required : true },
 	created_ts 		: { type : Date, default : Date.now },
@@ -39,7 +39,7 @@ const schema = new Schema({
     },
     toJSON: {
       virtuals: true
-    }
+    }	
 });
 
 
@@ -47,12 +47,5 @@ schema.virtual('title').get(function() {
 	return this.related_task ? this.related_task.title : this.no_task_title;
 });
 
-schema.post('save', (doc, next) => {
-	const description = `%user.first_name% has created a new objective: %meta.objective.title%`,
-			type = 'objective-create',
-			user = doc.created_by,
-			meta = { objective : doc._id };
-	ActivityModel.create({ description, type, user, meta }, next);
-})
 
 module.exports = mongoose.model('Objective', schema);

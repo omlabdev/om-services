@@ -1,6 +1,7 @@
 const ActivityModel = require('./../models/activity');
 const ObjectiveModel = require('./../models/objective');
 const TaskModel = require('./../models/task');
+const IntegrationModel = require('./../models/integration');
 const async = require('async');
 
 /*
@@ -18,6 +19,10 @@ exports.setup = (router) => {
 	router.get('/users/:userId/activity/:page?', exports.getActivityForUser);
 	router.get('/:object(objectives|tasks|projects)/:objectId/activity/:page?', exports.getActivityForObject);
 	router.get('/activity/:page?', exports.getActivity);
+}
+
+exports.createActivity = function(activity) {
+	return ActivityModel.create(activity)
 }
 
 exports.getActivityForUser = function(req, res) {
@@ -133,6 +138,18 @@ function hydrateDescription(doc, hydrateDone) {
 				}) 
 			});
 		}
+
+		// if we need to hydrate something from the meta.integration
+		// we better go get that bastard too, again
+		if (variable.indexOf('meta.integration') !== -1) {
+			// queue objective to be fetched before hydrating
+			fetchesToDo['meta.integration'] = ((fetchDone) => { 
+				fetchMetaIntegration(doc.meta.integration, (err, integration) => {
+					doc.meta.integration = integration.toObject();
+					fetchDone(err);
+				}) 
+			});
+		}
 	})
 
 	// if we need to do some meta fetching, this is the moment to
@@ -176,5 +193,9 @@ function fetchMetaObjective(_id, cb) {
 }
 
 function fetchMetaTask(_id, cb) {
-	TaskModel.findOne({ _id }).exec(cb);
+	TaskModel.findById(_id, cb);
+}
+
+function fetchMetaIntegration(_id, cb) {
+	IntegrationModel.findById(_id, cb);
 }

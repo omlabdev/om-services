@@ -2,6 +2,7 @@ const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
 const ActivityModel = require('./../models/activity');
 const ObjectId = require('mongoose').Types.ObjectId;
+const ActivityApi = require('./activity');
 
 /*
 	POST 	/api/{v}/tasks/add
@@ -21,25 +22,50 @@ exports.setup = (router) => {
 
 
 exports.createTask = function(req, res) {
-	const taskData = req.body;
-	taskData.created_by = req.currentUser._id;
+	const taskData = setCreateDefaults(req.body, req);
+	
 	const model = new TaskModel(taskData);
-	TaskModel.create(model)
-		.then(res.json.bind(res))
-		.catch((e) => {
-			res.json({ error: e.message })
-		});
+	const createP = TaskModel.create(model);
+	const activityP = createP.then(doc => 
+		createCreateActivity(doc, doc.created_by));
+
+	Promise.all([createP, activityP])
+		.then(([doc, _]) => { res.json(doc) })
+		.catch((e) => { res.json({ error: e.message }) });
+}
+
+function setCreateDefaults(taskData, req) {
+	// assign creator
+	taskData.created_by = req.currentUser._id;
+	return taskData;
+}
+
+exports.updateTask = function(req, res) {
+	const _id = req.params.taskId;
+	const updateP = TaskModel.findByIdAndUpdate(_id, { $set : req.body });
+	const activityP = updateP.then(doc =>
+		createUpdateActivity(doc, req.currentUser._id));
+	Promise.all([updateP, activityP])
+		.then(([doc, _]) => { res.json(doc) })
+		.catch((e) => { res.json({ error: e.message }) });
 }
 
 exports.deleteTask = function(req, res) {
 	const _id = req.params.taskId;
-	deleteRelatedObjectivesAndActivity(_id)
+	// find doc to get title before deleting
+	const findP = TaskModel.findById(_id)
+	// delete task and all related data
+	const deleteP = findP
+		.then((doc) => deleteRelatedObjectivesAndActivity(_id))
 		.then(() => deleteRelatedActivity( 'task', [ObjectId(_id)] ))
-		.then(() => TaskModel.remove({ _id }))
-		.then(res.json.bind(res))
-		.catch(e => {
-			res.json({ error: e.message })
-		})
+		.then(() => TaskModel.remove({ _id }));
+	// add the delete activity
+	const activityP = Promise.all([findP, deleteP])
+		.then(([doc, _]) => createDeleteActivity(doc.title, req.currentUser._id))
+	
+	Promise.all([findP, deleteP, activityP])
+		.then(([doc, result, _]) => { res.json(result); })
+		.catch(e => { res.json({ error: e.message }) })
 }
 
 function deleteRelatedObjectivesAndActivity(taskId) {
@@ -52,15 +78,6 @@ function deleteRelatedObjectivesAndActivity(taskId) {
 function deleteRelatedActivity(metaKey, ids) {
 	const query = { meta : { $exists: true }, [`meta.${metaKey}`] : {$in : ids } };
 	return ActivityModel.remove(query);
-}
-
-exports.updateTask = function(req, res) {
-	const _id = req.params.taskId;
-	TaskModel.update({ _id }, { $set : req.body })
-		.then(res.json.bind(res))
-		.catch((e) => {
-			res.json({ error: e.message })
-		})
 }
 
 exports.getTasks = function(req, res) {
@@ -119,4 +136,32 @@ exports.getTasksReferencedByObjectives = function() {
 	return ObjectiveModel
 		.find({ related_task : {$ne : null}, deleted : false }, { related_task : 1 })
 		.then(results => results.map(r => r.related_task))
+}
+
+
+
+function createDeleteActivity(taskTitle, userId) {
+	return ActivityApi.createActivity({
+		description: `%user.first_name% has deleted a task: ${taskTitle}`,
+		type: `task-deleted`,
+		user: userId.toString()
+	})
+}
+
+function createUpdateActivity(task, userId) {
+	return ActivityApi.createActivity({
+		description: `%user.first_name% has updated a task: %meta.task.title%`,
+		type: `task-updated`,
+		user: userId.toString(),
+		meta: { task : task._id } 
+	})
+}
+
+function createCreateActivity(task, userId) {
+	return ActivityApi.createActivity({
+		description: `%user.first_name% has created a task: %meta.task.title%`,
+		type: `task-created`,
+		user: userId.toString(),
+		meta: { task : task._id } 
+	})
 }
