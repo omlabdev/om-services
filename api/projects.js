@@ -50,7 +50,10 @@ exports.getProjects = function(req, res) {
 }
 
 exports.getProjectsBilling = function(req, res) {
-	ProjectModel.find({active: true}).sort({name: 1}).lean()
+	ProjectModel.find({active: true})
+		.sort({name: 1})
+		.populate('invoices.project', 'name')
+		.lean()
 		.then(projects => exports.calculateBillingVariables(projects))
 		.then(projects => { res.json(projects) })
 		.catch((e) => {
@@ -89,6 +92,7 @@ exports.calculateBillingVariables = function(projects) {
 			})
 			return resolve(result);
 		})
+		.catch(error => reject(error));
 	})
 }
 
