@@ -82,9 +82,9 @@ exports.calculateBillingVariables = function(projects) {
 			const result = projects.map((p, idx) => {
 				return Object.assign({}, p, hours[idx], {
 					billed_hours_month  : exports.calculateThisMonthBillingHours(p) / 3600,
-					billed_amount_month : exports.calculateThisMonthBillingAmount(p) / 3600,
+					billed_amount_month : exports.calculateThisMonthBillingAmount(p),
 					billed_hours_total  : exports.calculateTotalBillingHours(p) / 3600,
-					billed_amount_total : exports.calculateTotalBillingAmount(p) / 3600
+					billed_amount_total : exports.calculateTotalBillingAmount(p)
 				})
 			})
 			return resolve(result);
