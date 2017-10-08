@@ -81,10 +81,10 @@ exports.calculateBillingVariables = function(projects) {
 		Promise.all(promises).then(hours => {
 			const result = projects.map((p, idx) => {
 				return Object.assign({}, p, hours[idx], {
-					billed_hours_month  : exports.calculateThisMonthBillingHours(p),
-					billed_amount_month : exports.calculateThisMonthBillingAmount(p),
-					billed_hours_total  : exports.calculateTotalBillingHours(p),
-					billed_amount_total : exports.calculateTotalBillingAmount(p)
+					billed_hours_month  : exports.calculateThisMonthBillingHours(p) / 3600,
+					billed_amount_month : exports.calculateThisMonthBillingAmount(p) / 3600,
+					billed_hours_total  : exports.calculateTotalBillingHours(p) / 3600,
+					billed_amount_total : exports.calculateTotalBillingAmount(p) / 3600
 				})
 			})
 			return resolve(result);
@@ -99,8 +99,8 @@ exports.calculateExecutedHoursForProjects = function(projects) {
 			exports.calculateTotalExecuted(p._id)
 		]).then(([month, total]) => {
 			return {
-				executed_hours_month : month,
-				executed_hours_total : total
+				executed_hours_month : month / 3600,
+				executed_hours_total : total / 3600
 			}
 		})
 	})
