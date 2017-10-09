@@ -30,11 +30,6 @@ describe('billing', function() {
 
   beforeEach(function(done) {
   	setup.bind(sharedData)()
-  		.then(() => {
-  			console.log('------------------------');
-  			console.log(sharedData);
-  			console.log('------------------------');
-  		})
   		.then(() => done())
   		.catch(done);
   })
@@ -57,6 +52,38 @@ describe('billing', function() {
 			ProjectsApi.getWorkEntriesForProject(sharedData.projects[0]._id)
 				.then(workEntries => {
 					// assertions
+					should.exist(workEntries);
+					workEntries.should.have.lengthOf(6);
+					done();
+				})
+				.catch(done)
+		})
+
+	})
+
+	describe("#calculateTotalExecuted", function() {
+
+		it('should return the total amount for all work entries', function(done) {
+			ProjectsApi.calculateTotalExecuted(sharedData.projects[0]._id)
+				.then(total => {
+					// assertions
+					should.exist(total);
+					total.should.equal(3600*10 + 3600*2 + 3600*3 + 3600*12 + 3600 + 3600);
+					done();
+				})
+				.catch(done)
+		})
+
+	})
+
+	describe("#calculateThisMonthExecuted", function() {
+
+		it('should return total amount for this month\'s work entries', function(done) {
+			ProjectsApi.calculateThisMonthExecuted(sharedData.projects[1]._id)
+				.then(total => {
+					// assertions
+					should.exist(total);
+					total.should.equal(3600);
 					done();
 				})
 				.catch(done)

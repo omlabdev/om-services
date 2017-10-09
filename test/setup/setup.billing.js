@@ -7,13 +7,13 @@ const ProjectModel = require('../../models/project');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const allIds = {
-	projects: [new ObjectId()],
-	tasks: [new ObjectId(), new ObjectId(), new ObjectId()],
-	objectives: [new ObjectId(), new ObjectId(), new ObjectId()]
+	projects: [new ObjectId(), new ObjectId()],
+	tasks: [new ObjectId(), new ObjectId(), new ObjectId(), new ObjectId()],
+	objectives: [new ObjectId(), new ObjectId(), new ObjectId(), new ObjectId()]
 }
 
-export function setup() {
-	return setupProjects().bind(this)()
+exports.setup = function() {
+	return setupProjects.bind(this)()
 		.then((projects) => {
 			this.projects = projects; // this = sharedData
 			return setupTasks.bind(this)()
@@ -32,7 +32,7 @@ export function setup() {
 		})
 }
 
-export function tearDown() {
+exports.tearDown = function() {
 	return WorkEntryModel.remove({})
 		.then(() => ObjectiveModel.remove({}))
 		.then(() => TaskModel.remove())
@@ -40,6 +40,7 @@ export function tearDown() {
 }
 
 function setupProjects() {
+	const user = this.users[0]._id;
 	const ids = allIds.projects;
 	return createProjects([
 		{
@@ -55,15 +56,26 @@ function setupProjects() {
 				billed_hours: 80,
 				paid: true,
 				description: 'Sample invoice 1.1',
-				project: ids[0]
+				project: ids[0],
+				created_by: user
 			},{
 				invoicing_date: moment().add(-1,'months').toDate(),
 				amount: 55*5,
 				billed_hours: 5,
 				paid: false,
 				description: 'Sample invoice 1.2',
-				project: ids[0]
+				project: ids[0],
+				created_by: user
 			}]	
+		},
+		{
+			_id: ids[1],
+			name: 'Sample project 2',
+			hours_sold: 20,
+			hours_sold_unit: 'monthly',
+			hourly_rate: 55,
+			active: true,
+			invoices: []	
 		}
 	])
 }
@@ -92,6 +104,13 @@ function setupTasks() {
 			created_by: user,
 			project: allIds.projects[0],
 			origin: 'web'
+		},
+		{
+			_id: ids[3],
+			title: 'Sample task 4',
+			created_by: user,
+			project: allIds.projects[1],
+			origin: 'web'
 		}
 	])
 }
@@ -115,10 +134,18 @@ function setupObjectives() {
 			objective_date: moment().toDate(),
 			level: 'day',
 			owners: [user]
-		}
+		},
 		{
 			_id: ids[2],
 			related_task: allIds.tasks[2],
+			created_by: user,
+			objective_date: moment().toDate(),
+			level: 'day',
+			owners: [user]
+		},
+		{
+			_id: ids[3],
+			related_task: allIds.tasks[3],
 			created_by: user,
 			objective_date: moment().toDate(),
 			level: 'day',
@@ -148,17 +175,32 @@ function setupWorkEntries() {
 		{
 			objective: allIds.objectives[1],
 			time: 3600*12,
-			user: user
+			user: user,
+			created_ts: moment().add(-2, 'months').toDate()
 		},
 		{
 			objective: allIds.objectives[2],
 			time: 3600,
-			user: user
+			user: user,
+			created_ts: moment().add(-2, 'months').toDate()
 		},
 		{
 			objective: allIds.objectives[2],
 			time: 3600,
-			user: user
+			user: user,
+			created_ts: moment().add(-2, 'months').toDate()
+		},
+		{
+			objective: allIds.objectives[3],
+			time: 3600,
+			user: user,
+			created_ts: moment().toDate()
+		},
+		{
+			objective: allIds.objectives[3],
+			time: 3600,
+			user: user,
+			created_ts: moment().add(-1, 'months').toDate()
 		}
 	])
 }
@@ -172,7 +214,7 @@ function createObjectives(items) {
 }
 
 function createTasks(items) {
-	return createDocs(TasksModel, items);
+	return createDocs(TaskModel, items);
 }
 function createWorkEntries(items) {
 	return createDocs(WorkEntryModel, items);
@@ -181,7 +223,7 @@ function createWorkEntries(items) {
 function createDocs(model, items) {
 	return new Promise((resolve, reject) => {
 		let createdDocs = [];
-	  	async.each(items, (o, d) => {
+	  	async.eachSeries(items, (o, d) => {
 	  		model.create(o, (error, doc) => {
 	  			if (error) return d(error);
 	  			createdDocs.push(doc);

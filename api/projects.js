@@ -112,12 +112,12 @@ exports.calculateExecutedHoursForProjects = function(projects) {
 }
 
 exports.calculateTotalExecuted = function(projectId) {
-	return getWorkEntriesForProject(projectId)
+	return exports.getWorkEntriesForProject(projectId)
 		.then(workEntries => reduceWorkEntries(workEntries))
 }
 
 exports.calculateThisMonthExecuted = function(projectId) {
-	return getWorkEntriesForProject(projectId, getFilterForMonth(new Date()))
+	return exports.getWorkEntriesForProject(projectId, getFilterForMonth(new Date()))
 		.then(workEntries => reduceWorkEntries(workEntries))
 }
 
@@ -125,16 +125,15 @@ const reduceWorkEntries = function(workEntries) {
 	return workEntries.map(we => we.time).reduce((total, t) => t+total, 0);
 }
 
-function getWorkEntriesForProject(projectId, filters = {}) {
+exports.getWorkEntriesForProject = function(projectId, filters = {}) {
 	return getTasksForProject(projectId)
 		.then(taskIds => getObjectivesForTasks(taskIds))
 		.then(objectiveIds => getWorkEntriesForObjectives(objectiveIds, filters))
 }
 
 function getWorkEntriesForObjectives(objectiveIds, filters) {
-	const query = Object.assign(filters, {objective: {$in: objectiveIds}});
-	return WorkEntryModel.find(query)
-		.lean();
+	const query = Object.assign({}, filters, {objective: {$in: objectiveIds}});
+	return WorkEntryModel.find(query).lean();
 }
 
 function getObjectivesForTasks(taskIds) {
@@ -176,7 +175,7 @@ const isThisMonth = (date) => moment.utc(date).format('YYYY/MM') === moment.utc(
 const sum = (numbers) => numbers.reduce((total, n) => n+total, 0);
 
 const getFilterForMonth = (date) => {
-	const fromDate = moment.utc(date).startOf('month').startOf('day').toDate();
-	const toDate = moment.utc(date).endOf('month').endOf('day').toDate();
+	const fromDate = moment.utc(date).startOf('month').toDate();
+	const toDate = moment.utc(date).endOf('month').toDate();
 	return { created_ts: {$gte: fromDate, $lte: toDate} }
 }
