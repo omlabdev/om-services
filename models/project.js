@@ -21,6 +21,8 @@ var schema = new Schema({
 	active 			: { type : Boolean, default : true },
 	invoices 		: { type : [invoiceSchema], default : [] },
 	created_ts		: { type : Date, default : Date.now }
+}, {
+	minimize   : false
 });
 
 module.exports = mongoose.model('Project', schema);

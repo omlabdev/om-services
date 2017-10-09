@@ -15,9 +15,12 @@ const moment = require('moment');
  */
 exports.setup = (router) => {
 	router.get('/projects', exports.getProjects);
-	router.get('/projects/billing', exports.getProjectsBilling);
 	router.post('/projects/add', exports.createProject);
+	router.get('/projects/billing', exports.getProjectsBilling);
 	router.post('/projects/:projectId', exports.updateProject);
+	router.post('/projects/:projectId/invoices/add-invoice', exports.addInvoice);
+	router.post('/projects/:projectId/invoices/:invoiceId', exports.updateInvoice);
+	router.delete('/projects/:projectId/invoices/:invoiceId', exports.deleteInvoice);
 }
 
 exports.createProject = function(req, res) {
@@ -49,6 +52,30 @@ exports.getProjects = function(req, res) {
 		})
 }
 
+exports.addInvoice = function(req, res) {
+	const projectId = req.params.projectId;
+	const invoice = req.body;
+	ProjectModel.findByIdAndUpdate(projectId, {$push: {invoices: invoice}})
+		.then(result => { res.json(result) })
+		.catch(e => { res.json({ error: e.message }) });
+}
+
+exports.updateInvoice = function(req, res) {
+	const { projectId, invoiceId } = req.params;
+	const invoice = req.body;
+	ProjectModel.update({ _id: projectId, 'invoices._id': invoiceId },
+			{$set: {'invoices.$': invoice}})
+		.then(result => { res.json(result) })
+		.catch(e => { res.json({ error: e.message })})
+}
+
+exports.deleteInvoice = function(req, res) {
+	const { projectId, invoiceId } = req.params;
+	ProjectModel.update({ _id: projectId }, {$pull: {invoices: {_id: invoiceId}}})
+		.then(result => { res.json(result) })
+		.catch(e => { res.json({ error: e.message }) })
+}
+
 exports.getProjectsBilling = function(req, res) {
 	ProjectModel.find({active: true})
 		.sort({name: 1})
@@ -57,6 +84,7 @@ exports.getProjectsBilling = function(req, res) {
 		.then(projects => exports.calculateBillingVariables(projects))
 		.then(projects => { res.json(projects) })
 		.catch((e) => {
+			console.error(e);
 			res.json({ error: e.message })
 		})
 }
