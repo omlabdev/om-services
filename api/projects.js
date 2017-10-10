@@ -41,7 +41,7 @@ exports.updateProject = function(req, res) {
 }
 
 exports.getProjects = function(req, res) {
-	ProjectModel.find({active: true}, {invoices: 0}).sort({name: 1})
+	ProjectModel.find({}, {invoices: 0}).sort({name: 1})
 		.then((projects) => {
 			res.json({ projects })
 		})
