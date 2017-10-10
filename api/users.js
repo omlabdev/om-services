@@ -54,9 +54,16 @@ exports.authMiddleware = function(req, res, next) {
 	const canPass = passthrou.reduce((prev, v) => v || prev, false);
 	if (canPass) return next();
 
-	const token = (req.headers.authorization || '').trim();
+	// check url for token as querystring
+	let token = req.query.authtoken;
+	if (token) {
+		console.log("authenticating from querystring %s", token);
+		return doTokenAuth(token, req, res, next);
+	}
+	token = (req.headers.authorization || '').trim();
+	// no token at all. reject request
 	if (!token) return res.sendStatus(401);
-
+	
 	console.log("authenticating %s", token);
 
 	if (token.toLowerCase().startsWith('basic:')) 
