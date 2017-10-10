@@ -1,5 +1,5 @@
 const UsersModel = require('./../models/user');
-const sha = require('sha');
+const sha256 = require('sha256');
 const api = require('./api');
 
 const SLACK_TOKEN = 'biTlZ0Ica2fRNA4NFYLAWK33';
@@ -12,6 +12,8 @@ const EMAIL_TOKEN = '9078tyausgdhjkn89b38998iuyKHJGYU897'; // made-up token
 
 	POST	/api/{v}/users/add
 
+	GET		/api/{v}/users/all
+
 	POST	/api/{v}/users/:id
 
 	DELETE	/api/{v}/users/:id
@@ -22,6 +24,7 @@ exports.setup = (router) => {
 	router.post('/users/auth', exports.authorizeUser);
 	router.post('/users/auth-link', exports.authorizeUserWithLink);
 	router.post('/users/add', exports.createUser);
+	router.get('/users/all', exports.getAllUsers);
 	router.post('/users/:userId', exports.updateUser);
 	router.delete('/users/:userId', exports.disableUser);
 	router.get('/users/auth-links', exports.getUserLinks);
@@ -215,8 +218,7 @@ function getAuthLinkForUsernameAndPassword(id, username, password) {
 exports.createUser = function(req, res) {
 	const userData = req.body;
 	
-	const sha256 = sha.createHash('sha256');
-	userData.password = sha256.update(userData.password, 'utf8').digest('hex');
+	userData.password = sha256(userData.password); // encode pwd
 
 	const model = new UsersModel(userData);
 	UsersModel.create(model)
@@ -248,4 +250,10 @@ exports.getUsers = function(req, res) {
 		.catch((e) => {
 			res.json({ error: e.message })
 		})
+}
+
+exports.getAllUsers = function(req, res) {
+	UsersModel.find()
+		.then((users) => { res.json({ users }) })
+		.catch((e) => { res.json({ error: e.message }) })
 }
