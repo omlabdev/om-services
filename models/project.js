@@ -8,6 +8,7 @@ var invoiceSchema = new Schema({
 	invoicing_date     	: { type : Date, required : true },
 	project 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'Project', require : true },
 	paid 				: { type : Boolean, default : false },
+	number 				: { type : Number },
 
 	created_ts 		  	: { type : Date, default : Date.now },
 	created_by 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'User', required : true }
