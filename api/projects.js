@@ -19,11 +19,13 @@ const pugpdf = require('pug-pdf');
 
 	POST 	/api/{v}/projects/:id/invoices/add-invoice
 
-	GET 	/api/{v}/projects/:id/invoices/:invoiceId
-
 	POST 	/api/{v}/projects/:id/invoices/:invoiceId
 
 	DELETE 	/api/{v}/projects/:id/invoices/:invoiceId
+
+	GET 	/api/{v}/projects/:id/invoices/:invoiceId/html
+
+	GET 	/api/{v}/projects/:id/invoices/:invoiceId/pdf
  */
 exports.setup = (router) => {
 	router.get('/projects', exports.getProjects);
@@ -32,7 +34,7 @@ exports.setup = (router) => {
 	router.post('/projects/:projectId', exports.updateProject);
 	router.post('/projects/:projectId/invoices/add-invoice', exports.addInvoice);
 	router.post('/projects/:projectId/invoices/:invoiceId', exports.updateInvoice);
-	router.get('/projects/:projectId/invoices/:invoiceId', exports.renderInvoice);
+	router.get('/projects/:projectId/invoices/:invoiceId/html', exports.renderInvoice);
 	router.get('/projects/:projectId/invoices/:invoiceId/pdf', renderInvoicePdf);
 	router.delete('/projects/:projectId/invoices/:invoiceId', exports.deleteInvoice);
 }
