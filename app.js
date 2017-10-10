@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const sassMiddleware = require('node-sass-middleware');
 const mongoose = require('mongoose');
+const moment = require('moment');
 
 mongoose.Promise = global.Promise;
 
@@ -34,10 +35,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(sassMiddleware({
-	src: path.join(__dirname, 'public/stylesheets'),
-	dest: path.join(__dirname, 'public/stylesheets'),
+	src: __dirname,
+	dest: path.join(__dirname, 'public'),
 	indentedSyntax: false, // true = .sass and false = .scss
-	sourceMap: true
+	debug: true,
+    outputStyle: 'compressed',
+	sourceMap: true,
+	prefix: ''
 }));
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -49,6 +53,9 @@ app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
     next();
 })
+
+// expose to pug
+app.locals.moment = moment;
 
 // setup api urls & auth
 const router = express.Router();

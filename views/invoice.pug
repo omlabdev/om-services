@@ -1,0 +1,33 @@
+doctype html
+html
+	head
+		title Invoice
+		link(rel='stylesheet', href='/stylesheets/invoice.css')
+		link(type="text/css", media="print", rel="stylesheet", href='/stylesheets/invoice.css')
+	body
+		.wrapper
+			.left-col
+				img(src='/images/logo.png')
+			.right-col
+				.header
+					.invoice-title Invoice
+					.date 
+						span.title Date
+						span.value= moment(invoice.created_ts).format('MM/DD/YYYY')
+				.body
+					.to
+						.title To:
+						.value= invoice.project.name /* change to company name under project (or client model?) */
+					.description
+						.title Service description:
+						.value= invoice.description
+					.total
+						span.title Total amount
+						span.value= invoice.amount + ".00"
+						span.subtitle (in USD)
+			.footer
+				.company-name ON LAB, Inc.
+				.company-address 6718 NW 72nd. Ave. Suite No. 23897 Miami, FL, 33195-3002
+				.company-email on-lab@on-lab.com
+				.company-website on-lab.com
+				.invoice-number Invoice No 9

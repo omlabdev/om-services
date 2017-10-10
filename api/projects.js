@@ -4,6 +4,10 @@ const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
 const moment = require('moment');
 
+// pdf export of invoice
+const fs = require('fs');
+const pugpdf = require('pug-pdf');
+
 /*
 	POST	/api/{v}/projects/add
 
@@ -12,6 +16,14 @@ const moment = require('moment');
 	GET		/api/{v}/projects
 
 	GET 	/api/{v}/projects/billing
+
+	POST 	/api/{v}/projects/:id/invoices/add-invoice
+
+	GET 	/api/{v}/projects/:id/invoices/:invoiceId
+
+	POST 	/api/{v}/projects/:id/invoices/:invoiceId
+
+	DELETE 	/api/{v}/projects/:id/invoices/:invoiceId
  */
 exports.setup = (router) => {
 	router.get('/projects', exports.getProjects);
@@ -20,6 +32,8 @@ exports.setup = (router) => {
 	router.post('/projects/:projectId', exports.updateProject);
 	router.post('/projects/:projectId/invoices/add-invoice', exports.addInvoice);
 	router.post('/projects/:projectId/invoices/:invoiceId', exports.updateInvoice);
+	router.get('/projects/:projectId/invoices/:invoiceId', exports.renderInvoice);
+	router.get('/projects/:projectId/invoices/:invoiceId/pdf', renderInvoicePdf);
 	router.delete('/projects/:projectId/invoices/:invoiceId', exports.deleteInvoice);
 }
 
@@ -74,6 +88,17 @@ exports.deleteInvoice = function(req, res) {
 	ProjectModel.update({ _id: projectId }, {$pull: {invoices: {_id: invoiceId}}})
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message }) })
+}
+
+exports.renderInvoice = function(req, res) {
+	const { projectId, invoiceId } = req.params;
+	ProjectModel.findById({ _id: projectId })
+		.populate('invoices.project', 'name')
+		.then(doc => doc.invoices.id(invoiceId))
+		.then(invoice => {
+			res.render('invoice', { invoice })
+		})
+		.catch(error => { res.render('error', { error }) })
 }
 
 exports.getProjectsBilling = function(req, res) {
@@ -206,4 +231,35 @@ const getFilterForMonth = (date) => {
 	const fromDate = moment.utc(date).startOf('month').toDate();
 	const toDate = moment.utc(date).endOf('month').toDate();
 	return { created_ts: {$gte: fromDate, $lte: toDate} }
+}
+
+function renderInvoicePdf(req, res) {
+	const tmpFilename = 'invoice_' + moment().format('x') + '.pdf';
+	const tmpFile = __dirname + '/../tmp/' + tmpFilename;
+	const stream = fs.createWriteStream(tmpFile);
+	const css = __dirname + '/../public/stylesheets/invoice.css';
+
+	const { projectId, invoiceId } = req.params;
+
+	ProjectModel.findById({ _id: projectId })
+		.populate('invoices.project', 'name')
+		.then(doc => doc.invoices.id(invoiceId))
+		.then(invoice => {
+			fs.createReadStream(__dirname + '/../views/invoice.pug')
+				.pipe(pugpdf({
+					cssPath : css,
+					locals  : { invoice, moment }
+				}))
+				.pipe(stream);
+		})
+		.catch(error => { res.render('error', { error }) })	
+
+	stream.on('finish', function () { 
+		fs.readFile(tmpFile, function(err, data) {
+			res.setHeader('Content-Disposition', 'attachment; filename=' + tmpFilename);
+			res.setHeader('Content-Type', 'application/pdf');                
+			res.setHeader('Content-Length', data.length);
+			res.status(200).end(data, 'binary');
+		});
+	});
 }

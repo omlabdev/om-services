@@ -28,3 +28,10 @@ node_modules
 
 # Debug log from npm
 npm-debug.log
+
+# tmp Pdfs
+tmp/*.pdf
+
+# compiled css
+public/stylesheets/*.css
+public/stylesheets/*.map

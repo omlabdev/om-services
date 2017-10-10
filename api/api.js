@@ -4,7 +4,7 @@
 	
 	version 	: '1.0',
 
-	auth_on		: true,
+	auth_on		: false, // SET TO TRUE
 
 	app_domain 	: process.env.NODE_ENV === 'production' 
 					? 'https://om-frontend.herokuapp.com' 
