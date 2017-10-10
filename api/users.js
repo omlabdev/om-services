@@ -12,8 +12,6 @@ const EMAIL_TOKEN = '9078tyausgdhjkn89b38998iuyKHJGYU897'; // made-up token
 
 	POST	/api/{v}/users/add
 
-	GET		/api/{v}/users/all
-
 	POST	/api/{v}/users/:id
 
 	DELETE	/api/{v}/users/:id
@@ -24,7 +22,6 @@ exports.setup = (router) => {
 	router.post('/users/auth', exports.authorizeUser);
 	router.post('/users/auth-link', exports.authorizeUserWithLink);
 	router.post('/users/add', exports.createUser);
-	router.get('/users/all', exports.getAllUsers);
 	router.post('/users/:userId', exports.updateUser);
 	router.delete('/users/:userId', exports.disableUser);
 	router.get('/users/auth-links', exports.getUserLinks);
@@ -243,17 +240,11 @@ exports.disableUser = function(req, res) {
 }
 
 exports.getUsers = function(req, res) {
-	UsersModel.find({ enabled : true })
+	UsersModel.find()
 		.then((users) => {
 			res.json({ users })
 		})
 		.catch((e) => {
 			res.json({ error: e.message })
 		})
-}
-
-exports.getAllUsers = function(req, res) {
-	UsersModel.find()
-		.then((users) => { res.json({ users }) })
-		.catch((e) => { res.json({ error: e.message }) })
 }
