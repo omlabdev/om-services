@@ -11,6 +11,14 @@ var invoiceSchema = new Schema({
 
 	created_ts 		  	: { type : Date, default : Date.now },
 	created_by 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'User', required : true }
+}, {
+	_id: true,
+	toObject: {
+		virtuals: true
+	},
+	toJSON: {
+		virtuals: true
+	}
 });
 
 var schema = new Schema({
