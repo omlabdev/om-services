@@ -4,10 +4,6 @@ const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
 const moment = require('moment');
 
-// pdf export of invoice
-const fs = require('fs');
-const pugpdf = require('pug-pdf');
-
 /*
 	GET 	/api/{v}/projects/billing
 
@@ -26,7 +22,6 @@ exports.setup = (router) => {
 	router.post('/projects/:projectId/invoices/add-invoice', exports.addInvoice);
 	router.post('/projects/:projectId/invoices/:invoiceId', exports.updateInvoice);
 	router.get('/projects/:projectId/invoices/:invoiceId/html', exports.renderInvoice);
-	router.get('/projects/:projectId/invoices/:invoiceId/pdf', renderInvoicePdf);
 	router.delete('/projects/:projectId/invoices/:invoiceId', exports.deleteInvoice);
 }
 
@@ -195,35 +190,4 @@ const getFilterForMonth = (date) => {
 	const fromDate = moment.utc(date).startOf('month').toDate();
 	const toDate = moment.utc(date).endOf('month').toDate();
 	return { created_ts: {$gte: fromDate, $lte: toDate} }
-}
-
-function renderInvoicePdf(req, res) {
-	const tmpFilename = 'invoice_' + moment().format('x') + '.pdf';
-	const tmpFile = __dirname + '/../tmp/' + tmpFilename;
-	const stream = fs.createWriteStream(tmpFile);
-	const css = __dirname + '/../public/stylesheets/invoice.css';
-
-	const { projectId, invoiceId } = req.params;
-
-	ProjectModel.findById({ _id: projectId })
-		.populate('invoices.project', 'name')
-		.then(doc => doc.invoices.id(invoiceId))
-		.then(invoice => {
-			fs.createReadStream(__dirname + '/../views/invoice.pug')
-				.pipe(pugpdf({
-					cssPath : css,
-					locals  : { invoice, moment }
-				}))
-				.pipe(stream);
-		})
-		.catch(error => { res.render('error', { error }) })	
-
-	stream.on('finish', function () { 
-		fs.readFile(tmpFile, function(err, data) {
-			res.setHeader('Content-Disposition', 'attachment; filename=' + tmpFilename);
-			res.setHeader('Content-Type', 'application/pdf');                
-			res.setHeader('Content-Length', data.length);
-			res.status(200).end(data, 'binary');
-		});
-	});
 }
