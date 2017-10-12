@@ -14,8 +14,6 @@ const moment = require('moment');
 	DELETE 	/api/{v}/projects/:id/invoices/:invoiceId
 
 	GET 	/api/{v}/projects/:id/invoices/:invoiceId/html
-
-	GET 	/api/{v}/projects/:id/invoices/:invoiceId/pdf
  */
 exports.setup = (router) => {
 	router.get('/projects/billing', exports.getProjectsBilling);
@@ -61,7 +59,7 @@ exports.renderInvoice = function(req, res) {
 }
 
 exports.getProjectsBilling = function(req, res) {
-	ProjectModel.find({active: true})
+	ProjectModel.find()
 		.sort({name: 1})
 		.populate('invoices.project', 'name')
 		.lean()
