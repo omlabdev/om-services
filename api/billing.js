@@ -50,7 +50,7 @@ exports.deleteInvoice = function(req, res) {
 exports.renderInvoice = function(req, res) {
 	const { projectId, invoiceId } = req.params;
 	ProjectModel.findById({ _id: projectId })
-		.populate('invoices.project', 'name')
+		.populate('invoices.project', 'name company_name')
 		.then(doc => doc.invoices.id(invoiceId))
 		.then(invoice => {
 			res.render('invoice', { invoice })
