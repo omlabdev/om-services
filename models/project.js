@@ -24,7 +24,7 @@ var invoiceSchema = new Schema({
 
 var schema = new Schema({
 	name 			: { type : String, required : true },
-	billing_company : { type : String, defaut : '' },
+	company_name 	: { type : String, defaut : '' },
 	hours_sold		: { type : Number, min : 0, required : true },
 	hours_sold_unit : { type : String, enum : ['monthly', 'total'], lowercase : true, default : 'total' },
 	hourly_rate		: { type : Number, required : true, min : 0 },
