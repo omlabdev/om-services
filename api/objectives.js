@@ -8,6 +8,8 @@ const ActivityApi = require('./activity');
 /*
 	POST 	/api/{v}/objectives/add
 
+	GET		/api/{v}/objectives/query
+
 	POST 	/api/{v}/objectives/:id
 
 	DELETE 	/api/{v}/objectives/:id
@@ -24,6 +26,7 @@ const ActivityApi = require('./activity');
  */
 exports.setup = (router) => {
 	router.post('/objectives/add', exports.createObjective);
+	router.get('/objectives/query', exports.queryObjectives);
 	router.post('/objectives/:objectiveId', exports.updateObjective);
 	router.delete('/objectives/:objectiveId', exports.deleteObjective);
 	router.get('/objectives/:year/:month?/:day?', exports.getObjectives);
@@ -101,6 +104,45 @@ exports.getObjectives = function(req, res) {
 		.catch(e => { res.json({ error: e.message }) })
 }
 
+exports.queryObjectives = function(req, res) {
+	const { query } = req;
+	
+	// no need to go find tasks
+	if (!query.related_task) {
+		return exports._getObjectivesWithQuery(query)
+			.then(objectives => { res.json({ objectives }) })
+			.catch(e => { res.json({ error: e.message }) })
+	}
+
+	// if using title, convert to regex
+	if (query.related_task.title !== undefined) {
+		query.related_task.title = {$regex : query.related_task.title, '$options' : 'i'};
+	}
+
+	// need to go find tasks first
+	TasksModel.find(query.related_task)
+		.then(tasks => tasks.map(t => t._id))
+		.then(tasks => {
+			// find objectives for tasks that also match the
+			// requested query
+			const dbQuery = Object.assign({}, query, { related_task : {$in: tasks} });
+			return exports._getObjectivesWithQuery(dbQuery)
+		})
+		.then(objectives => { res.json({ objectives }) })
+		.catch(e => { res.json({ error: e.message }) })
+}
+
+exports._getObjectivesWithQuery = function(query) {
+	return ObjectivesModel.find(query)
+		.populate('related_task created_by owners deleted_by completed_by scratched_by')
+		.then(objectives => TasksModel.populate(objectives, { // populate deeper level 
+			path: 'related_task.project',
+			select: 'name',
+			model: 'Project'
+		}))
+		.then(toObjects)
+}
+
 exports.getObjectivesSummary = function(req, res) {
 	const { year, month, day } = req.params;
 	const owner = req.currentUser._id;
@@ -140,17 +182,9 @@ exports._getObjectives = function(year, month, day, all, owner) {
 		query.owners = ObjectId(owner);
 	}
 
-	return ObjectivesModel.find(query)
-		.populate('related_task created_by owners')
-		.then(objectives => TasksModel.populate(objectives, { // populate deeper level 
-			path: 'related_task.project',
-			select: 'name',
-			model: 'Project'
-		}))
-		.then(toObjects)
+	return exports._getObjectivesWithQuery(query)
 		.then((objectives) => groupByLevel(objectives));
 }
-
 
 function getQueryDateFilter(pYear, pMonth, pDay, all) {
 	const thisMonth = moment.utc().format('MM');
