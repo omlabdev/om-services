@@ -7,6 +7,8 @@ const moment = require('moment');
 /*
 	GET 	/api/{v}/projects/billing
 
+	GET 	/api/{v}/projects/:id/billing
+
 	POST 	/api/{v}/projects/:id/invoices/add-invoice
 
 	POST 	/api/{v}/projects/:id/invoices/:invoiceId
@@ -17,6 +19,7 @@ const moment = require('moment');
  */
 exports.setup = (router) => {
 	router.get('/projects/billing', exports.getProjectsBilling);
+	router.get('/projects/:projectId/billing', exports.getBillingForProject);
 	router.post('/projects/:projectId/invoices/add-invoice', exports.addInvoice);
 	router.post('/projects/:projectId/invoices/:invoiceId', exports.updateInvoice);
 	router.get('/projects/:projectId/invoices/:invoiceId/html', exports.renderInvoice);
@@ -59,16 +62,31 @@ exports.renderInvoice = function(req, res) {
 }
 
 exports.getProjectsBilling = function(req, res) {
-	ProjectModel.find()
-		.sort({name: 1})
-		.populate('invoices.project', 'name')
-		.lean()
-		.then(projects => exports.calculateBillingVariables(projects))
+	exports.getBilling()
 		.then(projects => { res.json(projects) })
 		.catch((e) => {
 			console.error(e);
 			res.json({ error: e.message })
 		})
+}
+
+exports.getBillingForProject = function(req, res) {
+	exports.getBilling(req.params.projectId)
+		.then(project => { res.json(project) })
+		.catch((e) => {
+			console.error(e);
+			res.json({ error: e.message })
+		})
+}
+
+exports.getBilling = function(projectId) {
+	const query = projectId ? { _id: projectId } : {};
+	return ProjectModel.find(query)
+		.sort({name: 1})
+		.populate('invoices.project', 'name')
+		.lean()
+		.then(projects => exports.calculateBillingVariables(projects))
+		.then(projects => projectId ? projects[0] : projects)
 }
 
 /**

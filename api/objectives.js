@@ -121,6 +121,7 @@ exports.queryObjectives = function(req, res) {
 
 	// need to go find tasks first
 	TasksModel.find(query.related_task)
+		.limit(12) // TODO: paging
 		.then(tasks => tasks.map(t => t._id))
 		.then(tasks => {
 			// find objectives for tasks that also match the
