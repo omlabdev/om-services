@@ -153,25 +153,31 @@ const reduceWorkEntries = function(workEntries) {
 	return workEntries.map(we => we.time).reduce((total, t) => t+total, 0);
 }
 
-exports.getWorkEntriesForProject = function(projectId, filters = {}) {
+exports.getWorkEntriesForProject = function(projectId, filters = {}, populate = false) {
 	return getTasksForProject(projectId)
+		.then(tasks => tasks.map(d => d._id))
 		.then(taskIds => getObjectivesForTasks(taskIds))
-		.then(objectiveIds => getWorkEntriesForObjectives(objectiveIds, filters))
+		.then(objectives => objectives.map(d => d._id))
+		.then(objectiveIds => getWorkEntriesForObjectives(objectiveIds, filters, populate))
 }
 
-function getWorkEntriesForObjectives(objectiveIds, filters) {
+function getWorkEntriesForObjectives(objectiveIds, filters, populate = false) {
 	const query = Object.assign({}, filters, {objective: {$in: objectiveIds}});
-	return WorkEntryModel.find(query).lean();
+	let find = WorkEntryModel.find(query).sort({ created_ts : -1 })
+	if (populate) {
+		find = find
+			.populate('user objective')
+			.then(doc => TaskModel.populate(doc, {path: 'objective.related_task'}));
+	}
+	return find;
 }
 
 function getObjectivesForTasks(taskIds) {
-	return ObjectiveModel.find({related_task: {$in: taskIds}})
-		.lean().then(docs => docs.map(d => d._id));
+	return ObjectiveModel.find({related_task: {$in: taskIds}}).lean();
 }
 
 function getTasksForProject(projectId) {
-	return TaskModel.find({project: projectId})
-		.lean().then(docs => docs.map(d => d._id));
+	return TaskModel.find({project: projectId}).lean();
 }
 
 exports.calculateThisMonthBillingHours = function(project) {

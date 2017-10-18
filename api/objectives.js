@@ -4,6 +4,7 @@ const TasksModel = require('./../models/task');
 const { toObjects } = require('./../utils');
 const ObjectId = require('mongoose').Types.ObjectId;
 const ActivityApi = require('./activity');
+const BillingApi = require('./billing');
 
 /*
 	POST 	/api/{v}/objectives/add

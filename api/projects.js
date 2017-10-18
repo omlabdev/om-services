@@ -3,6 +3,7 @@ const WorkEntryModel = require('./../models/work_entry');
 const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
 const moment = require('moment');
+const WorkEntriesApi = require('./work_entries');
 
 // pdf export of invoice
 const fs = require('fs');
@@ -14,11 +15,14 @@ const pugpdf = require('pug-pdf');
 	POST	/api/{v}/projects/:id
 
 	GET		/api/{v}/projects
+
+	GET 	/api/{v}/projects/:id/work-entries
  */
 exports.setup = (router) => {
 	router.get('/projects', exports.getProjects);
 	router.post('/projects/add', exports.createProject);
 	router.post('/projects/:projectId', exports.updateProject);
+	router.get('/projects/:projectId/work-entries', exports.getWorkEntriesForProject);
 }
 
 exports.createProject = function(req, res) {
@@ -48,4 +52,11 @@ exports.getProjects = function(req, res) {
 		.catch((e) => {
 			res.json({ error: e.message })
 		})
+}
+
+exports.getWorkEntriesForProject = function(req, res) {
+	const { projectId } = req.params;
+	WorkEntriesApi.getWorkEntriesForProject(projectId)
+		.then(we => { res.json({ entries: we }) })
+		.catch(e => { res.json({ error: e.message }) })
 }

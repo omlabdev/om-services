@@ -1,5 +1,6 @@
 const WorkEntryModel = require('./../models/work_entry');
 const ActivityApi = require('./activity');
+const BillingApi = require('./billing');
 const { formatSecondsIntoTime } = require('../utils');
 
 /*
@@ -80,4 +81,8 @@ function createDeleteActivity(workEntry, userId) {
 		user: userId.toString(),
 		meta: { objective : workEntry.objective } 
 	})
+}
+
+exports.getWorkEntriesForProject = function(projectId) {
+	return BillingApi.getWorkEntriesForProject(projectId, {}, true);
 }
