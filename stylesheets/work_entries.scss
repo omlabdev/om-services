@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans|PT+Sans');
+
+* {
+	box-sizing: border-box;
+	font-family: PT Sans;
+	-webkit-print-color-adjust: exact;
+	font-size: 12pt;
+}
+
+h1 {
+	font-size: 1.4em;
+}
+h2 {
+	font-size: 1.15em;
+}
+
+.wrapper {
+	margin: 30pt;
+
+	table {
+		margin: 0 auto;
+	}
+
+	td {
+		padding: 4pt 5pt;
+		border: none;
+	}
+
+	tfoot td, td:last-child {
+		text-align: right;
+	}
+
+	tfoot tr, thead tr {
+		background-color: #f2f2f2;
+	}
+}

@@ -1,19 +1,26 @@
 const WorkEntryModel = require('./../models/work_entry');
 const ActivityApi = require('./activity');
 const BillingApi = require('./billing');
+const ProjectModel = require('./../models/project');
 const { formatSecondsIntoTime } = require('../utils');
 
 /*
 	GET 	/api/{v}/objectives/:id/work-entries
 
+	GET 	/api/{v}/projects/:id/work-entries
+
 	POST 	/api/{v}/objectives/:id/work-entries/add
 
 	DELETE	/api/{v}/objectives/:id/work-entries/:id
+
+	GET 	/api/{v}/projects/:id/work-entries/export/html
  */
 exports.setup = (router) => {
 	router.get('/objectives/:objectiveId/work-entries', exports.getWorkEntries);
 	router.post('/objectives/:objectiveId/work-entries/add', exports.createWorkEntry);
 	router.delete('/objectives/:objectiveId/work-entries/:workEntryId', exports.deleteWorkEntry);
+	router.get('/projects/:projectId/work-entries', exports.getWorkEntriesForProject);
+	router.get('/projects/:projectId/work-entries/export/html', exports.exportWorkEntriesForProject);
 }
 
 exports.createWorkEntry = function(req, res) {
@@ -83,6 +90,48 @@ function createDeleteActivity(workEntry, userId) {
 	})
 }
 
-exports.getWorkEntriesForProject = function(projectId) {
-	return BillingApi.getWorkEntriesForProject(projectId, {}, true);
+exports.getWorkEntriesForProject = function(req, res) {
+	const { projectId } = req.params;
+
+	_getWorkEntriesForProject(projectId, req.query)
+		.then(we => { res.json({ entries: we }) })
+		.catch(e => { res.json({ error: e.message }) })
 }
+
+exports.exportWorkEntriesForProject = function(req, res) {
+	const { projectId } = req.params;
+
+	const projectP = ProjectModel.findById(projectId);
+	const weP = _getWorkEntriesForProject(projectId, req.query);
+
+	Promise.all([projectP, weP])
+		.then(([project, we]) => {
+			res.render('work_entries', { entries: we, project: project })
+		})
+		.catch(e => { res.render('error', { error: e }) })
+}
+
+function _getWorkEntriesForProject(projectId, _filters = {}) {
+	let filters = Object.assign({}, _filters);
+
+	// remove empty filters
+	Object.keys(filters).forEach(f => {
+		if (!filters[f]) delete filters[f];
+	})
+
+	// re-format created_ts filter from dateFrom and dateTo
+	if (filters.dateFrom) {
+		filters.created_ts = {
+			$gte: moment.utc(filters.dateFrom).startOf('day').toDate()
+		}
+		delete(filters['dateFrom']);
+	}
+	if (filters.dateTo) {
+		if (!filters.created_ts) filters.created_ts = {};
+		filters.created_ts['$lte'] = moment.utc(filters.dateTo).endOf('day').toDate();
+		delete(filters['dateTo']);
+	}
+
+	return BillingApi.getWorkEntriesForProject(projectId, filters, true);
+}
+
