@@ -3,6 +3,7 @@ const ActivityApi = require('./activity');
 const BillingApi = require('./billing');
 const ProjectModel = require('./../models/project');
 const { formatSecondsIntoTime } = require('../utils');
+const moment = require('moment');
 
 /*
 	GET 	/api/{v}/objectives/:id/work-entries
@@ -132,6 +133,7 @@ function _getWorkEntriesForProject(projectId, _filters = {}) {
 		delete(filters['dateTo']);
 	}
 
+	console.log(filters);
 	return BillingApi.getWorkEntriesForProject(projectId, filters, true);
 }
 

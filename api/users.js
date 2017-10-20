@@ -103,6 +103,10 @@ function doTokenAuth(token, req, res, next) {
 		.then(user => {
 			if (!user) return res.sendStatus(401);
 			req.currentUser = user.toObject();
+
+			// remove querystring token
+			delete (req.query['authtoken']);
+
 			next();
 		})
 		.catch((error) => res.sendStatus(401));
