@@ -116,7 +116,7 @@ exports.getBilling = function(projectId) {
  * @return {Array}          
  */
 exports.groupInvoicesByProject = function(invoices) {
-	return ProjectModel.find({ active: true })
+	return ProjectModel.find()
 		.sort({ name: 1 })
 		.lean()
 		.then(projects => {
