@@ -237,22 +237,22 @@ function getTasksForProject(projectId) {
 
 exports.calculateThisMonthBillingHours = function(project) {
 	return exports.reduceInvoicesFieldWithCondition('billed_hours', 
-		i => isThisMonth(i.invoicing_date), project.invoices);
+		i => isThisMonth(i.invoicing_date) && i.direction === 'out', project.invoices);
 }
 
 exports.calculateThisMonthBillingAmount = function(project) {
 	return exports.reduceInvoicesFieldWithCondition('amount', 
-		i => isThisMonth(i.invoicing_date), project.invoices);
+		i => isThisMonth(i.invoicing_date) && i.direction === 'out', project.invoices);
 }
 
 exports.calculateTotalBillingHours = function(project) {
 	return exports.reduceInvoicesFieldWithCondition('billed_hours', 
-		i => true, project.invoices);
+		i => i.direction === 'out', project.invoices);
 }
 
 exports.calculateTotalBillingAmount = function(project) {
 	return exports.reduceInvoicesFieldWithCondition('amount', 
-		i => true, project.invoices);
+		i => i.direction === 'out', project.invoices);
 }
 
 exports.reduceInvoicesFieldWithCondition = function(field, condition, invoices) {
