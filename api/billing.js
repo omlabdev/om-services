@@ -171,6 +171,14 @@ exports.calculateBillingVariables = function(projects) {
 	})
 }
 
+/**
+ * Calculates the amount of hours executed for all given project
+ * this month and total.
+ * 
+ * @param  {Array} projects 
+ * @return {Promise}          An object with executed_hours_month 
+ *                               and executed_hours_total
+ */
 exports.calculateExecutedHoursForProjects = function(projects) {
 	const promises = projects.map(p => {
 		return Promise.all([
