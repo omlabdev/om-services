@@ -1,4 +1,5 @@
 const ProjectModel = require('./../models/project');
+const InvoiceModel = require('./../models/invoice');
 const WorkEntryModel = require('./../models/work_entry');
 const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
@@ -22,14 +23,14 @@ exports.setup = (router) => {
 	router.get('/projects/:projectId/billing', exports.getBillingForProject);
 	router.post('/projects/:projectId/invoices/add-invoice', exports.addInvoice);
 	router.post('/projects/:projectId/invoices/:invoiceId', exports.updateInvoice);
-	router.get('/projects/:projectId/invoices/:invoiceId/html', exports.renderInvoice);
 	router.delete('/projects/:projectId/invoices/:invoiceId', exports.deleteInvoice);
+	router.get('/projects/:projectId/invoices/:invoiceId/html', exports.renderInvoice);
 }
 
 exports.addInvoice = function(req, res) {
 	const projectId = req.params.projectId;
-	const invoice = req.body;
-	ProjectModel.findByIdAndUpdate(projectId, {$push: {invoices: invoice}})
+	const invoice = Object.assign({}, req.body, { project: projectId });
+	InvoiceModel.create(invoice)
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message }) });
 }
@@ -37,30 +38,41 @@ exports.addInvoice = function(req, res) {
 exports.updateInvoice = function(req, res) {
 	const { projectId, invoiceId } = req.params;
 	const invoice = req.body;
-	ProjectModel.update({ _id: projectId, 'invoices._id': invoiceId },
-			{$set: {'invoices.$': invoice}})
+	InvoiceModel.update({ project: projectId, _id: invoiceId }, {$set: invoice})
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message })})
 }
 
 exports.deleteInvoice = function(req, res) {
-	const { projectId, invoiceId } = req.params;
-	ProjectModel.update({ _id: projectId }, {$pull: {invoices: {_id: invoiceId}}})
+	const { invoiceId, projectId } = req.params;
+	InvoiceModel.remove({ _id: invoiceId, project: projectId })
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message }) })
 }
 
+/**
+ * Renders the HTML for a Corp invoice that can be printed
+ * or exported as PDF
+ * 
+ * @param  {Object} req
+ * @param  {Object} res
+ */
 exports.renderInvoice = function(req, res) {
 	const { projectId, invoiceId } = req.params;
-	ProjectModel.findById({ _id: projectId })
-		.populate('invoices.project', 'name company_name')
-		.then(doc => doc.invoices.id(invoiceId))
+	InvoiceModel.findById({ _id: invoiceId, project: projectId })
+		.populate('project', 'name company_name')
 		.then(invoice => {
 			res.render('invoice', { invoice })
 		})
 		.catch(error => { res.render('error', { error }) })
 }
 
+/**
+ * Returns all the sent invoices for a given project
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
 exports.getProjectsBilling = function(req, res) {
 	exports.getBilling()
 		.then(projects => { res.json(projects) })
@@ -79,15 +91,50 @@ exports.getBillingForProject = function(req, res) {
 		})
 }
 
+/**
+ * Returns the billing information for the given project, or 
+ * all of them if id not present
+ * 
+ * @param  {String} projectId Optional filter
+ * @return {Promise}           
+ */
 exports.getBilling = function(projectId) {
 	const query = projectId ? { _id: projectId } : {};
-	return ProjectModel.find(query)
-		.sort({name: 1})
-		.populate('invoices.project', 'name')
+	return InvoiceModel.find(query)
+		.populate('project', 'name _id')
 		.lean()
+		.then(invoices => exports.groupInvoicesByProject(invoices))
 		.then(projects => exports.calculateBillingVariables(projects))
 		.then(projects => projectId ? projects[0] : projects)
 }
+
+/**
+ * Groups all invoices in the corresponding projects, returning
+ * an array of projects with invoices inside under *invoices*
+ * 
+ * @param  {Array} invoices 
+ * @return {Array}          
+ */
+exports.groupInvoicesByProject = function(invoices) {
+	return ProjectModel.find({ active: true })
+		.sort({ name: 1 })
+		.lean()
+		.then(projects => {
+			// index projects by id and add empty invoices array inside
+			const projectsById = {};
+			projects.forEach(p => { 
+				p.invoices = [];
+				projectsById[p._id.toString()] = p;
+			});
+			// add invoices to each project
+			invoices.forEach(i => {
+				const pid = i.project._id.toString();
+				projectsById[pid].invoices.push(i);
+			})
+			return projects;
+		})
+}
+
 
 /**
  * Here we calculate the following variables for each project
