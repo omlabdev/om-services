@@ -68,7 +68,7 @@ exports.renderInvoice = function(req, res) {
 }
 
 /**
- * Returns all the sent invoices for a given project
+ * Returns all invoices and billing variables for all projects
  * 
  * @param  {Object} req 
  * @param  {Object} res 
@@ -82,6 +82,13 @@ exports.getProjectsBilling = function(req, res) {
 		})
 }
 
+/**
+ * Returns all invoices and billing variables for a given
+ * project
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
 exports.getBillingForProject = function(req, res) {
 	exports.getBilling(req.params.projectId)
 		.then(project => { res.json(project) })
@@ -145,6 +152,8 @@ exports.groupInvoicesByProject = function(invoices) {
  * 	- amount billed total
  * 	- hours registered this month
  * 	- hours registered total
+ * 	- expenses amount this month
+ * 	- expenses amount total
  * 	
  * @param  {Array} projects 
  * @return {Promise}
@@ -159,10 +168,12 @@ exports.calculateBillingVariables = function(projects) {
 		Promise.all(promises).then(hours => {
 			const result = projects.map((p, idx) => {
 				return Object.assign({}, p, hours[idx], {
-					billed_hours_month  : exports.calculateThisMonthBillingHours(p),
-					billed_amount_month : exports.calculateThisMonthBillingAmount(p),
-					billed_hours_total  : exports.calculateTotalBillingHours(p),
-					billed_amount_total : exports.calculateTotalBillingAmount(p)
+					billed_hours_month  	: exports.calculateThisMonthBillingHours(p),
+					billed_amount_month 	: exports.calculateThisMonthBillingAmount(p),
+					billed_hours_total  	: exports.calculateTotalBillingHours(p),
+					billed_amount_total 	: exports.calculateTotalBillingAmount(p),
+					expenses_amount_month 	: exports.calculateThisMonthExpenses(p),
+					expenses_amount_total 	: exports.calculateTotalExpenses(p)
 				})
 			})
 			return resolve(result);
@@ -253,6 +264,16 @@ exports.calculateTotalBillingHours = function(project) {
 exports.calculateTotalBillingAmount = function(project) {
 	return exports.reduceInvoicesFieldWithCondition('amount', 
 		i => i.direction === 'out', project.invoices);
+}
+
+exports.calculateThisMonthExpenses = function(project) {
+	return exports.reduceInvoicesFieldWithCondition('amount', 
+		i => isThisMonth(i.invoicing_date) && i.direction === 'in', project.invoices);
+}
+
+exports.calculateTotalExpenses = function(project) {
+	return exports.reduceInvoicesFieldWithCondition('amount', 
+		i => i.direction === 'in', project.invoices);
 }
 
 exports.reduceInvoicesFieldWithCondition = function(field, condition, invoices) {
