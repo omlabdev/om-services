@@ -106,11 +106,11 @@ exports.getBillingForProject = function(req, res) {
  * @return {Promise}           
  */
 exports.getBilling = function(projectId) {
-	const query = projectId ? { _id: projectId } : {};
+	const query = projectId ? { project: projectId } : {};
 	return InvoiceModel.find(query)
 		.populate('project', 'name _id')
 		.lean()
-		.then(invoices => exports.groupInvoicesByProject(invoices))
+		.then(invoices => exports.groupInvoicesByProject(invoices, projectId))
 		.then(projects => exports.calculateBillingVariables(projects))
 		.then(projects => projectId ? projects[0] : projects)
 }
@@ -118,12 +118,18 @@ exports.getBilling = function(projectId) {
 /**
  * Groups all invoices in the corresponding projects, returning
  * an array of projects with invoices inside under *invoices*
+ * to the resolved promise.
+ *
+ * If projectId is indicated, returns only that project on the
+ * resulting array
  * 
  * @param  {Array} invoices 
- * @return {Array}          
+ * @param  {String} projectId Optional project filter to fetch just 1
+ * @return {Promise}          
  */
-exports.groupInvoicesByProject = function(invoices) {
-	return ProjectModel.find()
+exports.groupInvoicesByProject = function(invoices, projectId) {
+	const query = projectId ? { _id: projectId } : {};
+	return ProjectModel.find(query)
 		.sort({ name: 1 })
 		.lean()
 		.then(projects => {
