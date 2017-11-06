@@ -6,31 +6,32 @@ const ObjectiveModel = require('./../models/objective');
 const moment = require('moment');
 
 /*
-	GET 	/api/{v}/projects/billing
+	GET 	/api/{v}/billing/invoices
 
-	GET 	/api/{v}/projects/:id/billing
+	GET 	/api/{v}/billing/projects
 
-	POST 	/api/{v}/projects/:id/invoices/add-invoice
+	GET 	/api/{v}/billing/projects/:id
 
-	POST 	/api/{v}/projects/:id/invoices/:invoiceId
+	POST 	/api/{v}/billing/invoices/add-invoice
 
-	DELETE 	/api/{v}/projects/:id/invoices/:invoiceId
+	POST 	/api/{v}/billing/invoices/:invoiceId
 
-	GET 	/api/{v}/projects/:id/invoices/:invoiceId/html
+	DELETE 	/api/{v}/billing/invoices/:invoiceId
+
+	GET 	/api/{v}/billing/invoices/:invoiceId/html
  */
 exports.setup = (router) => {
-	router.get('/projects/billing', exports.getProjectsBilling);
-	router.get('/projects/:projectId/billing', exports.getBillingForProject);
-	router.post('/projects/:projectId/invoices/add-invoice', exports.addInvoice);
-	router.post('/projects/:projectId/invoices/:invoiceId', exports.updateInvoice);
-	router.delete('/projects/:projectId/invoices/:invoiceId', exports.deleteInvoice);
-	router.get('/projects/:projectId/invoices/:invoiceId/html', exports.renderInvoice);
+	router.get('/billing/invoices', exports.getInvoices);
+	router.get('/billing/projects', exports.getProjectsBilling);
+	router.get('/billing/projects/:projectId', exports.getBillingForProject);
+	router.post('/billing/invoices/add-invoice', exports.addInvoice);
+	router.post('/billing/invoices/:invoiceId', exports.updateInvoice);
+	router.delete('/billing/invoices/:invoiceId', exports.deleteInvoice);
+	router.get('/billing/invoices/:invoiceId/html', exports.renderInvoice);
 }
 
 exports.addInvoice = function(req, res) {
-	const projectId = req.params.projectId;
-	const invoice = Object.assign({}, req.body, { project: projectId });
-	InvoiceModel.create(invoice)
+	InvoiceModel.create(req.body)
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message }) });
 }
@@ -45,8 +46,8 @@ exports.updateInvoice = function(req, res) {
 }
 
 exports.deleteInvoice = function(req, res) {
-	const { invoiceId, projectId } = req.params;
-	InvoiceModel.remove({ _id: invoiceId, project: projectId })
+	const { invoiceId } = req.params;
+	InvoiceModel.remove({ _id: invoiceId })
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message }) })
 }
@@ -59,8 +60,8 @@ exports.deleteInvoice = function(req, res) {
  * @param  {Object} res
  */
 exports.renderInvoice = function(req, res) {
-	const { projectId, invoiceId } = req.params;
-	InvoiceModel.findById({ _id: invoiceId, project: projectId })
+	const { invoiceId } = req.params;
+	InvoiceModel.findById({ _id: invoiceId })
 		.populate('project', 'name company_name')
 		.then(invoice => {
 			res.render('invoice', { invoice })
@@ -69,29 +70,48 @@ exports.renderInvoice = function(req, res) {
 }
 
 /**
- * Returns all invoices and billing variables for all projects
+ * Returns all existing invoices
  * 
  * @param  {Object} req 
  * @param  {Object} res 
  */
-exports.getProjectsBilling = function(req, res) {
-	exports.getBilling()
-		.then(projects => { res.json(projects) })
-		.catch((e) => {
+exports.getInvoices = function(req, res) {
+	InvoiceModel.find({})
+		.populate('project', 'name')
+		.lean()
+		.sort({ invoicing_date: 1 })
+		.then(invoices => { res.json(invoices) })
+		.catch(e => { 
 			console.error(e);
 			res.json({ error: e.message })
 		})
 }
 
 /**
- * Returns all invoices and billing variables for a given
- * project
+ * Returns the project information with billing variables 
+ * calculated for a all projects
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
+exports.getProjectsBilling = function(req, res) {
+	exports.getProjectsBillingWithVariables()
+		.then(projects => { res.json(projects) })
+		.catch(e => {
+			console.error(e);
+			res.json({ error: e.message })
+		})
+}
+
+/**
+ * Returns the project information with billing variables
+ * calculated for a single project
  * 
  * @param  {Object} req 
  * @param  {Object} res 
  */
 exports.getBillingForProject = function(req, res) {
-	exports.getBilling(req.params.projectId)
+	exports.getProjectsBillingWithVariables(req.params.projectId)
 		.then(project => { res.json(project) })
 		.catch((e) => {
 			console.error(e);
@@ -100,14 +120,17 @@ exports.getBillingForProject = function(req, res) {
 }
 
 /**
- * Returns the billing information for the given project, or 
- * all of them if id not present
+ * Calculates and returns the billing variables for every
+ * project.
+ *
+ * If filter is present, calculates and returns only that
+ * single project
  * 
  * @param  {String} projectId Optional filter
  * @return {Promise}           
  */
-exports.getBilling = function(projectId) {
-	const query = projectId ? { project: projectId } : {};
+exports.getProjectsBillingWithVariables = function(projectId) {
+	const query = projectId ? { project: projectId } : { project: {$ne: null} };
 	return InvoiceModel.find(query)
 		.populate('project', 'name _id')
 		.lean()
