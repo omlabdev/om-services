@@ -5,7 +5,7 @@ var schema = new Schema({
 	project 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'Project', require : true },
 	description 	  	: { type : String, required : true },
 	amount 				: { type : Number, required : true },
-	billed_hours 		: { type : Number, required : true },
+	billed_hours 		: { type : Number },
 	invoicing_date     	: { type : Date, required : true },
 	paid 				: { type : Boolean, default : false },
 	number 				: { type : Number },
