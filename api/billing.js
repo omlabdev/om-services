@@ -36,9 +36,10 @@ exports.addInvoice = function(req, res) {
 }
 
 exports.updateInvoice = function(req, res) {
-	const { projectId, invoiceId } = req.params;
+	const { invoiceId } = req.params;
 	const invoice = req.body;
-	InvoiceModel.update({ project: projectId, _id: invoiceId }, {$set: invoice})
+	// not using project id cause it may have changed
+	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice})
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message })})
 }
