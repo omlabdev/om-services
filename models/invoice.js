@@ -2,7 +2,8 @@ var mongoose = require ('mongoose');
 var Schema = mongoose.Schema;
 
 var schema = new Schema({
-	project 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'Project', require : true },
+	project 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'Project' },
+	receiver 		  	: { type : String },
 	description 	  	: { type : String, required : true },
 	amount 				: { type : Number, required : true },
 	billed_hours 		: { type : Number },
