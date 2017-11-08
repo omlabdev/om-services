@@ -11,6 +11,7 @@ var schema = new Schema({
 	paid 				: { type : Boolean, default : false },
 	number 				: { type : Number },
 	direction			: { type : String, enum: ['in', 'out'], lowercase: true, require: true },
+	attachment			: { type : String },
 
 	created_by 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'User', required : true },
 	created_ts 		  	: { type : Date, default : Date.now }

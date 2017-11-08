@@ -4,6 +4,17 @@ const WorkEntryModel = require('./../models/work_entry');
 const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
 const moment = require('moment');
+const multer = require('multer');
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/attachments')
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname)
+  }
+})
+let upload = multer({ storage });
 
 /*
 	GET 	/api/{v}/billing/invoices
@@ -24,14 +35,17 @@ exports.setup = (router) => {
 	router.get('/billing/invoices', exports.getInvoices);
 	router.get('/billing/projects', exports.getProjectsBilling);
 	router.get('/billing/projects/:projectId', exports.getBillingForProject);
-	router.post('/billing/invoices/add-invoice', exports.addInvoice);
+	router.post('/billing/invoices/add-invoice', upload.any(), exports.addInvoice);
 	router.post('/billing/invoices/:invoiceId', exports.updateInvoice);
 	router.delete('/billing/invoices/:invoiceId', exports.deleteInvoice);
 	router.get('/billing/invoices/:invoiceId/html', exports.renderInvoice);
 }
 
 exports.addInvoice = function(req, res) {
-	InvoiceModel.create(req.body)
+	const invoice = req.body;
+	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
+
+	InvoiceModel.create(invoice)
 		.then(result => { res.json(result) })
 		.catch(e => { res.json({ error: e.message }) });
 }

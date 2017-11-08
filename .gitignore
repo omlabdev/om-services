@@ -35,3 +35,6 @@ tmp/*.pdf
 # compiled css
 public/stylesheets/*.css
 public/stylesheets/*.map
+
+# Attachments
+public/attachments/*.*
