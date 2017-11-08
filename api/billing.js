@@ -36,7 +36,7 @@ exports.setup = (router) => {
 	router.get('/billing/projects', exports.getProjectsBilling);
 	router.get('/billing/projects/:projectId', exports.getBillingForProject);
 	router.post('/billing/invoices/add-invoice', upload.any(), exports.addInvoice);
-	router.post('/billing/invoices/:invoiceId', exports.updateInvoice);
+	router.post('/billing/invoices/:invoiceId', upload.any(), exports.updateInvoice);
 	router.delete('/billing/invoices/:invoiceId', exports.deleteInvoice);
 	router.get('/billing/invoices/:invoiceId/html', exports.renderInvoice);
 }
@@ -53,6 +53,7 @@ exports.addInvoice = function(req, res) {
 exports.updateInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	const invoice = req.body;
+	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
 	// not using project id cause it may have changed
 	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice})
 		.then(result => { res.json(result) })
