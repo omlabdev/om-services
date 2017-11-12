@@ -14,12 +14,11 @@ const ActivityApi = require('./activity');
 	GET		/api/{v}/tasks/:page??query=?
  */
 exports.setup = (router) => {
-	router.post('/tasks/add', exports.createTask);
+	router.post('/tasks/add', checkExistingTask, exports.createTask);
 	router.delete('/tasks/:taskId', exports.deleteTask);
 	router.post('/tasks/:taskId', exports.updateTask);
 	router.get('/tasks/:page?', exports.getTasks);
 }
-
 
 exports.createTask = function(req, res) {
 	const taskData = setCreateDefaults(req.body, req);
@@ -40,14 +39,41 @@ function setCreateDefaults(taskData, req) {
 	return taskData;
 }
 
+/**
+ * Checks if the task comes from an integration and it
+ * already exists. In that case, performs an update insted.
+ * 
+ * @param  {Object}   req  
+ * @param  {Object}   res  
+ * @param  {Function} next 
+ */
+function checkExistingTask(req, res, next) {
+	if (!req.body.external_id) return next();
+	// check if exists
+	TaskModel.findOne({ external_id }).then(doc => {
+		if (!doc) return next();
+		// task exists already. update instead.
+		const taskId = doc._id.toString();
+		return exports.updateTaskWithId(taskId, req.body, req.currentUser._id)
+			.then(doc => { res.json(doc) })
+			.catch(e => { res.json({ error: e.message }) });
+
+	})
+	.catch(e => { res.json({ error: e.message }) });
+}
+
 exports.updateTask = function(req, res) {
 	const _id = req.params.taskId;
-	const updateP = TaskModel.findByIdAndUpdate(_id, { $set : req.body });
+	exports.updateTaskWithId(_id, req.body, req.currentUser._id)
+		.then(doc => { res.json(doc) })
+		.catch(e => { res.json({ error: e.message }) });
+}
+
+exports.updateTaskWithId = function(id, update, userId) {
+	const updateP = TaskModel.findByIdAndUpdate(id, { $set : update });
 	const activityP = updateP.then(doc =>
-		createUpdateActivity(doc, req.currentUser._id));
-	Promise.all([updateP, activityP])
-		.then(([doc, _]) => { res.json(doc) })
-		.catch((e) => { res.json({ error: e.message }) });
+		createUpdateActivity(doc, userId));
+	return Promise.all([updateP, activityP]).then(([doc, _]) => doc)
 }
 
 exports.deleteTask = function(req, res) {
