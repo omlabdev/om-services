@@ -50,6 +50,7 @@ function setCreateDefaults(taskData, req) {
 function checkExistingTask(req, res, next) {
 	if (!req.body.external_id) return next();
 	// check if exists
+	const { external_id } = req.body;
 	TaskModel.findOne({ external_id }).then(doc => {
 		if (!doc) return next();
 		// task exists already. update instead.
