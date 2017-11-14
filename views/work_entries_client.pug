@@ -1,0 +1,35 @@
+doctype html
+html
+	head
+		title Hours report - #{project.name}
+		link(rel='stylesheet', href='/stylesheets/work_entries.css')
+	body
+		.wrapper
+			header
+				h1 Hours report
+				.project-info
+					h2 Project: #{project.name}
+
+			section#hours-status
+				p Total executed: #{project.executed_hours_total.toFixed(2)}
+				p Total purchased: #{project.paid_hours_total}
+				p Remaining: #{(project.paid_hours_total-project.executed_hours_total).toFixed(2)}
+					
+			table
+				thead
+					tr
+						td Date
+						td Task
+						td Time
+				tbody
+					- var time = 0
+					for we in entries
+						tr
+							td= moment(we.created_ts).format('MM/DD')
+							td= we.objective.related_task.title
+							td  #{we.time / 3600} hr#{ we.time/3600 === 1 ? '' : 's'}
+							- time += we.time / 3600
+				tfoot
+					tr
+						td(colspan='2') Total hours
+						td #{time} hrs

@@ -217,6 +217,8 @@ exports.calculateBillingVariables = function(projects) {
 					billed_amount_month 	: exports.calculateThisMonthBillingAmount(p),
 					billed_hours_total  	: exports.calculateTotalBillingHours(p),
 					billed_amount_total 	: exports.calculateTotalBillingAmount(p),
+					paid_hours_total  		: exports.calculateTotalPaidHours(p),
+					paid_amount_total 		: exports.calculateTotalPaidAmount(p),
 					expenses_amount_month 	: exports.calculateThisMonthExpenses(p),
 					expenses_amount_total 	: exports.calculateTotalExpenses(p)
 				})
@@ -309,6 +311,16 @@ exports.calculateTotalBillingHours = function(project) {
 exports.calculateTotalBillingAmount = function(project) {
 	return exports.reduceInvoicesFieldWithCondition('amount', 
 		i => i.direction === 'out', project.invoices);
+}
+
+exports.calculateTotalPaidHours = function(project) {
+	return exports.reduceInvoicesFieldWithCondition('billed_hours', 
+		i => i.direction === 'out' && i.paid, project.invoices);
+}
+
+exports.calculateTotalPaidAmount = function(project) {
+	return exports.reduceInvoicesFieldWithCondition('amount', 
+		i => i.direction === 'out' && i.paid, project.invoices);
 }
 
 exports.calculateThisMonthExpenses = function(project) {

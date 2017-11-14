@@ -21,7 +21,8 @@ exports.setup = (router) => {
 	router.post('/objectives/:objectiveId/work-entries/add', exports.createWorkEntry);
 	router.delete('/objectives/:objectiveId/work-entries/:workEntryId', exports.deleteWorkEntry);
 	router.get('/projects/:projectId/work-entries', exports.getWorkEntriesForProject);
-	router.get('/projects/:projectId/work-entries/export/html', exports.exportWorkEntriesForProject);
+	router.get('/projects/:projectId/work-entries/export/detailed/html', exports.exportWorkEntriesDetailedViewForProject);
+	router.get('/projects/:projectId/work-entries/export/client/html', exports.exportWorkEntriesClientViewForProject);
 }
 
 exports.createWorkEntry = function(req, res) {
@@ -99,7 +100,14 @@ exports.getWorkEntriesForProject = function(req, res) {
 		.catch(e => { res.json({ error: e.message }) })
 }
 
-exports.exportWorkEntriesForProject = function(req, res) {
+/**
+ * Renders a detailed HTML report of work entries for the specified
+ * project applying the filters sent on the request by querystring.
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
+exports.exportWorkEntriesDetailedViewForProject = function(req, res) {
 	const { projectId } = req.params;
 
 	const projectP = ProjectModel.findById(projectId);
@@ -107,11 +115,43 @@ exports.exportWorkEntriesForProject = function(req, res) {
 
 	Promise.all([projectP, weP])
 		.then(([project, we]) => {
-			res.render('work_entries', { entries: we, project: project })
+			res.render('work_entries_detailed', { entries: we, project: project })
 		})
 		.catch(e => { res.render('error', { error: e }) })
 }
 
+/**
+ * Renders a top level HTML report of work entries for the specified
+ * project applying the filters sent on the request by querystring.
+ *
+ * Also includes purchased hours left.
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
+exports.exportWorkEntriesClientViewForProject = function(req, res) {
+	const { projectId } = req.params;
+
+	const projectP = BillingApi.getProjectsBillingWithVariables(projectId);
+	const weP = _getWorkEntriesForProject(projectId, req.query);
+
+	Promise.all([projectP, weP])
+		.then(([project, we]) => {
+			res.render('work_entries_client', { entries: we, project: project })
+		})
+		.catch(e => { res.render('error', { error: e }) })
+}
+
+/**
+ * Fetches the work entries recorded for the given project id
+ * after applying the given filters.
+ *
+ * Returns a Premise for a working entries array.
+ * 
+ * @param  {String} projectId 
+ * @param  {Object} _filters  
+ * @return {Premise}           
+ */
 function _getWorkEntriesForProject(projectId, _filters = {}) {
 	let filters = Object.assign({}, _filters);
 
@@ -133,7 +173,6 @@ function _getWorkEntriesForProject(projectId, _filters = {}) {
 		delete(filters['dateTo']);
 	}
 
-	console.log(filters);
 	return BillingApi.getWorkEntriesForProject(projectId, filters, true);
 }
 
