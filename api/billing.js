@@ -94,7 +94,7 @@ exports.getInvoices = function(req, res) {
 	InvoiceModel.find({})
 		.populate('project', 'name')
 		.lean()
-		.sort({ invoicing_date: 1 })
+		.sort({ invoicing_date: -1 })
 		.then(invoices => { res.json(invoices) })
 		.catch(e => { 
 			console.error(e);
