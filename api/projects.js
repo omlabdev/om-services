@@ -5,10 +5,6 @@ const ObjectiveModel = require('./../models/objective');
 const moment = require('moment');
 const WorkEntriesApi = require('./work_entries');
 
-// pdf export of invoice
-const fs = require('fs');
-const pugpdf = require('pug-pdf');
-
 /*
 	POST	/api/{v}/projects/add
 
