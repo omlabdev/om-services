@@ -3,6 +3,7 @@ const ObjectiveModel = require('./../models/objective');
 const TaskModel = require('./../models/task');
 const IntegrationModel = require('./../models/integration');
 const async = require('async');
+const { sendMessage } = require('../utils/slack');
 
 /*
 	GET		/api/{v}/users/:id/activity/:page?
@@ -22,7 +23,9 @@ exports.setup = (router) => {
 }
 
 exports.createActivity = function(activity) {
-	return ActivityModel.create(activity)
+	const createP = ActivityModel.create(activity);
+	const sendToSlackP = createP.then(doc => sendActivityToSlack(doc._id));
+	return Promise.all([createP, sendToSlackP]).then(([doc, _]) => doc);
 }
 
 exports.getActivityForUser = function(req, res) {
@@ -188,6 +191,21 @@ function hydrateDescription(doc, hydrateDone) {
 	}
 }
 
+/**
+ * Same as hydrateDescription but returns a Promise instead
+ * 
+ * @param  {Object} doc 
+ * @return {Promise}     
+ */
+function hydrateDescriptionWithPromise(doc) {
+	return new Promise((resolve, reject) => {
+		hydrateDescription(doc, (error, newDoc) => {
+			if (error) return reject(error);
+			return resolve(newDoc);
+		})
+	})
+}
+
 function fetchMetaObjective(_id, cb) {
 	ObjectiveModel.findOne({ _id }).populate('related_task').exec(cb);
 }
@@ -198,4 +216,30 @@ function fetchMetaTask(_id, cb) {
 
 function fetchMetaIntegration(_id, cb) {
 	IntegrationModel.findById(_id, cb);
+}
+
+/**
+ * Send the activity description with the given id to
+ * slack default channel (#om).
+ * 
+ * Returns a promise with the result of sending the
+ * message to slack
+ * 
+ * @param  {String} activityId 
+ * @return {Promise}            
+ */
+function sendActivityToSlack(activityId) {
+	// populate user and hydrate
+	const hydrateP = ActivityModel.findById(activityId).populate('user').lean()
+		.then(doc => hydrateDescriptionWithPromise(doc));
+	// fetch integration to get slack token
+	const integrationP = IntegrationModel.findOne({ service: 'slack' });
+
+	return Promise.all([hydrateP, integrationP])
+		.then(([hydratedActivity, integration]) => {
+			// send slack message with the activity description
+			const token = integration.meta.token;
+			const message = { text: hydratedActivity.description };
+			return sendMessage('#om', message, token);
+		})
 }

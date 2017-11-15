@@ -9,16 +9,56 @@
 
 h1 {
 	font-size: 1.4em;
+	text-transform: uppercase;
 }
 h2 {
 	font-size: 1.15em;
 }
 
 .wrapper {
-	margin: 30pt;
+	width: 800px;
+	margin: 30pt auto;
+	border: 1px solid #000;
+
+	header {
+		background-color: #000;
+		color: #fff;
+		padding: 10pt;
+		text-align: center;
+	}
+
+	main {
+		padding: 10pt;
+	}
+
+	#hours-status {
+		margin: 30pt 0;
+		ul {
+			list-style: none;
+			padding: 0;
+			font-size: 0;
+		}
+		li {
+			width: 33%;
+			text-align: center;
+			display: inline-block;
+
+			.title {
+				font-size: 15pt;
+				font-weight: 100;
+				color: #bbb;
+				margin-bottom: 8pt;
+			}
+			.value {
+				font-size: 28pt;
+				color: #777;
+			}
+		}
+	}
 
 	table {
 		margin: 0 auto;
+		width: 100%;
 	}
 
 	td {

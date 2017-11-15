@@ -10,23 +10,25 @@ html
 				.project-info
 					h2 Project: #{project.name}
 					
-			table
-				thead
-					tr
-						td Date
-						td User
-						td Task
-						td Time
-				tbody
-					- var time = 0
-					for we in entries
+			main
+
+				table
+					thead
 						tr
-							td= moment(we.created_ts).format('MM/DD')
-							td= we.user.full_name
-							td= we.objective.related_task.title
-							td  #{we.time / 3600} hr#{ we.time/3600 === 1 ? '' : 's'}
-							- time += we.time / 3600
-				tfoot
-					tr
-						td(colspan='3') Total hours
-						td #{time} hrs
+							td Date
+							td User
+							td Task
+							td Time
+					tbody
+						- var time = 0
+						for we in entries
+							tr
+								td= moment(we.created_ts).format('MM/DD')
+								td= we.user.full_name
+								td= we.objective.related_task.title
+								td  #{we.time / 3600} hr#{ we.time/3600 === 1 ? '' : 's'}
+								- time += we.time / 3600
+					tfoot
+						tr
+							td(colspan='3') Total hours
+							td #{time} hrs
