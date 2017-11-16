@@ -305,6 +305,6 @@ function sendActivityToSlack(activityId, notifyAccounts) {
 				text: mentions + ': ' + hydratedActivity.description, 
 				link_names: true 
 			};
-			return sendMessage('#om-test', message, token);
+			return sendMessage('#om', message, token);
 		})
 }
