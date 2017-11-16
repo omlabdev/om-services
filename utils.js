@@ -2,8 +2,9 @@
 exports.toObjects = (elements) => elements.map(e => e.toObject());
 
 exports.formatSecondsIntoTime = function(seconds) {
-	const hours = seconds/3600;
-	const formattedHour = String(Math.floor(hours) + 100).substring(1);
-	const formattedMinutes = String(((hours - Math.floor(hours)) * 60) + 100).substring(1);
+	const hours = Math.floor(seconds / 3600);
+	const minutes = Math.round((seconds - (hours*3600)) / 60);
+	const formattedHour = hours > 9 ? String(hours) : '0' + hours;
+	const formattedMinutes = minutes > 9 ? String(minutes) : '0' + minutes;
 	return formattedHour + ':' + formattedMinutes;
 }

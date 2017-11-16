@@ -56,6 +56,7 @@ app.use(function(req, res, next) {
 
 // expose to pug
 app.locals.moment = moment;
+app.locals.utils = require('./utils');
 
 // setup api urls & auth
 const router = express.Router();

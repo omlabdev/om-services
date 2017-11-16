@@ -16,13 +16,13 @@ html
 					ul
 						li
 							.title Total executed
-							.value= project.executed_hours_total.toFixed(2)
+							.value= utils.formatSecondsIntoTime(project.executed_hours_total * 3600)
 						li
 							.title Total purchased
-							.value= project.paid_hours_total
+							.value= utils.formatSecondsIntoTime(project.paid_hours_total * 3600)
 						li
 							.title Remainign
-							.value= (project.paid_hours_total-project.executed_hours_total).toFixed(2)
+							.value= utils.formatSecondsIntoTime((project.paid_hours_total - project.executed_hours_total) * 3600)
 						
 				table
 					thead
@@ -36,9 +36,9 @@ html
 							tr
 								td= moment(we.created_ts).format('MM/DD')
 								td= we.objective.related_task.title
-								td  #{we.time / 3600} hr#{ we.time/3600 === 1 ? '' : 's'}
-								- time += we.time / 3600
+								td  #{utils.formatSecondsIntoTime(we.time)}
+								- time += we.time
 					tfoot
 						tr
 							td(colspan='2') Total hours
-							td #{time} hrs
+							td #{utils.formatSecondsIntoTime(time)}
