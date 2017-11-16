@@ -2,6 +2,7 @@ const ActivityModel = require('./../models/activity');
 const ObjectiveModel = require('./../models/objective');
 const TaskModel = require('./../models/task');
 const IntegrationModel = require('./../models/integration');
+const UserModel = require('./../models/user');
 const async = require('async');
 const { sendMessage } = require('../utils/slack');
 
@@ -22,10 +23,56 @@ exports.setup = (router) => {
 	router.get('/activity/:page?', exports.getActivity);
 }
 
-exports.createActivity = function(activity) {
+exports.createActivity = function(activity, extras = {}) {
 	const createP = ActivityModel.create(activity);
-	const sendToSlackP = createP.then(doc => sendActivityToSlack(doc._id));
-	return Promise.all([createP, sendToSlackP]).then(([doc, _]) => doc);
+
+	const notifySlack = (mentions = []) => {
+		console.log(mentions);
+		let sendToSlackP;
+
+		if (mentions.length > 0) {
+			// fetch the slack accounts to @mention
+			const fetchUsersP = getUsersWithIds(mentions)
+				.then(users => users.filter(u => !!u.slack_account))
+				.then(users => users.map(u => u.slack_account))
+			// send the slack message
+			sendToSlackP = Promise.all([createP, fetchUsersP])
+				.then(([doc, slackAccounts]) => sendActivityToSlack(doc._id, slackAccounts));
+		}
+		else {
+			// just send the message
+			sendToSlackP = createP.then(doc => sendActivityToSlack(doc._id));
+		}
+
+		return Promise.all([createP, sendToSlackP]).then(([doc, _]) => doc);
+	}
+
+	/*
+		Notify through slack if something related to a user
+		happens, such us:
+			- an objective has been created for someone
+			- an objective has been updated with a new owner
+			- a task has been created, which may result in 
+				someone taking care of it
+	 */
+	switch (activity.type) {
+		case "task-created":
+			return notifySlack(); // notify without mentions
+		
+		case "objective-created":
+			return notifySlack(extras.new.owners); // notify mentioning the owner(s)
+		
+		case "objective-updated":
+			// notify only if owners have changed
+			console.log(extras);
+			if (extras.old.owners.join(',') !== extras.new.owners.join(',')) {
+				return notifySlack(extras.new.owners);  // notify mentioning the owner(s)
+			}
+			return createP;
+
+		default: 
+			return createP;
+	}
 }
 
 exports.getActivityForUser = function(req, res) {
@@ -219,6 +266,17 @@ function fetchMetaIntegration(_id, cb) {
 }
 
 /**
+ * Returns a promise that will return the user objects
+ * for the given ids
+ * 
+ * @param  {Array} ids An array of user ids
+ * @return {Promise}     
+ */
+function getUsersWithIds(ids) {
+	return UserModel.find({ _id: {$in: ids} }).lean();
+}
+
+/**
  * Send the activity description with the given id to
  * slack default channel (#om).
  * 
@@ -228,7 +286,11 @@ function fetchMetaIntegration(_id, cb) {
  * @param  {String} activityId 
  * @return {Promise}            
  */
-function sendActivityToSlack(activityId) {
+function sendActivityToSlack(activityId, notifyAccounts) {
+	console.log('sendActivityToSlack()');
+
+	// build mentions text
+	const mentions = notifyAccounts.map(a => `@${a}`).join(' ');
 	// populate user and hydrate
 	const hydrateP = ActivityModel.findById(activityId).populate('user').lean()
 		.then(doc => hydrateDescriptionWithPromise(doc));
@@ -239,7 +301,10 @@ function sendActivityToSlack(activityId) {
 		.then(([hydratedActivity, integration]) => {
 			// send slack message with the activity description
 			const token = integration.meta.token;
-			const message = { text: hydratedActivity.description };
-			return sendMessage('#om', message, token);
+			const message = { 
+				text: mentions + ': ' + hydratedActivity.description, 
+				link_names: true 
+			};
+			return sendMessage('#om-test', message, token);
 		})
 }
