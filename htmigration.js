@@ -66,7 +66,8 @@ var projectsMapping = {
 }
 
 function migrateTasks() {
-	const tasks = ht.tasks.find({}).toArray();
+	const tasks = ht.tasks.find({'hoursRecords.0.date':{$gt: ISODate('2017-10-06 00:24:17.659Z')}}).toArray();
+
 	tasks.forEach(function(t) {
 		/* create task */
 		const task = {};

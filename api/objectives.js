@@ -47,8 +47,9 @@ exports.createObjective = function(req, res) {
 	const model = new ObjectivesModel(objectiveData);
 	const createP = ObjectivesModel.create(model)
 		.then(doc => ObjectivesModel.populate(doc, {path: 'related_task'}))
-	const activityP = createP.then(doc => 
-		createActivity(doc, doc.created_by, 'created'), { new: doc });
+	const activityP = createP.then(doc => {
+		createActivity(doc, doc.created_by, 'created', { new: doc });
+	});
 
 	Promise.all([createP, activityP])
 		.then(([doc, _]) => { res.json(doc) })
