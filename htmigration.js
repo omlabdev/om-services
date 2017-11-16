@@ -1,7 +1,7 @@
 var conn = new Mongo();
 var ht = conn.getDB("hours_tracker");
 var om = conn.getDB("om");
-var omMigration = conn.getDB("om_migration");
+// var omMigration = conn.getDB("om_migration");
 
 /**
  * HT_ID : OM_ID
@@ -91,7 +91,7 @@ function migrateTasks() {
 		task._id = new ObjectId();
 		
 		/* add task to db */
-		omMigration.tasks.insert(task);
+		om.tasks.insert(task);
 
 		/* create objective for task */
 		const objective = {};
@@ -114,7 +114,7 @@ function migrateTasks() {
 		objective._id = new ObjectId();
 
 		/* add objective to db */
-		omMigration.objectives.insert(objective);
+		om.objectives.insert(objective);
 
 		/* create work entry for objective */
 		const workEntry = {};
@@ -124,18 +124,18 @@ function migrateTasks() {
 		workEntry.created_ts = objective.created_ts;
 
 		/* add work entry to db */
-		omMigration.work_entries.insert(workEntry);
+		om.work_entries.insert(workEntry);
 	})
 	print ("Migrated " + tasks.length + " tasks, objectives and work entries");
 }
 
 
 /* drop migration and copy OM again */
-omMigration.dropDatabase();
-ht.copyDatabase("om", "om_migration", "127.0.0.1");
+// omMigration.dropDatabase();
+// ht.copyDatabase("om", "om_migration", "127.0.0.1");
 
 /* reconnect */
-omMigration = conn.getDB("om_migration");
+// omMigration = conn.getDB("om_migration");
 
 /* do migration */
 migrateTasks();

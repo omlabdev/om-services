@@ -27,7 +27,6 @@ exports.createActivity = function(activity, extras = {}) {
 	const createP = ActivityModel.create(activity);
 
 	const notifySlack = (mentions = []) => {
-		console.log(mentions);
 		let sendToSlackP;
 
 		if (mentions.length > 0) {
@@ -286,11 +285,10 @@ function getUsersWithIds(ids) {
  * @param  {String} activityId 
  * @return {Promise}            
  */
-function sendActivityToSlack(activityId, notifyAccounts) {
-	console.log('sendActivityToSlack()');
-
+function sendActivityToSlack(activityId, notifyAccounts = []) {
+	const channel = process.env.NODE_ENV === 'production' ? '#om' : '#om-test';
 	// build mentions text
-	const mentions = notifyAccounts.map(a => `@${a}`).join(' ');
+	const mentions = notifyAccounts.length > 0 ? notifyAccounts.map(a => `@${a}`).join(' ') : '';
 	// populate user and hydrate
 	const hydrateP = ActivityModel.findById(activityId).populate('user').lean()
 		.then(doc => hydrateDescriptionWithPromise(doc));
@@ -302,9 +300,9 @@ function sendActivityToSlack(activityId, notifyAccounts) {
 			// send slack message with the activity description
 			const token = integration.meta.token;
 			const message = { 
-				text: mentions + ': ' + hydratedActivity.description, 
+				text: (mentions ? mentions + ': ' : '') + hydratedActivity.description,
 				link_names: true 
 			};
-			return sendMessage('#om', message, token);
+			return sendMessage(channel, message, token);
 		})
 }
