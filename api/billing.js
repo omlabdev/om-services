@@ -53,6 +53,9 @@ exports.addInvoice = function(req, res) {
 exports.updateInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	const invoice = req.body;
+
+	console.log(invoice);
+
 	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
 	// not using project id cause it may have changed
 	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice})

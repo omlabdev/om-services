@@ -49,7 +49,7 @@ exports.createActivity = function(activity, extras = {}) {
 	/*
 		Notify through slack if something related to a user
 		happens, such us:
-			- an objective has been created for someone
+			- an objective has been created for someone other than the creator
 			- an objective has been updated with a new owner
 			- a task has been created, which may result in 
 				someone taking care of it
@@ -59,11 +59,14 @@ exports.createActivity = function(activity, extras = {}) {
 			return notifySlack(); // notify without mentions
 		
 		case "objective-created":
-			return notifySlack(extras.new.owners); // notify mentioning the owner(s)
+			// notify only if owner is not creator or more than one owner
+			if (extras.new.owners.length > 1 || extras.new.owners[0] !== extras.new.created_by) {
+				return notifySlack(extras.new.owners); // notify mentioning the owner(s)
+			}
+			return createP;
 		
 		case "objective-updated":
 			// notify only if owners have changed
-			console.log(extras);
 			if (extras.old.owners.join(',') !== extras.new.owners.join(',')) {
 				return notifySlack(extras.new.owners);  // notify mentioning the owner(s)
 			}
