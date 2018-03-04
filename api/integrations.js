@@ -9,6 +9,8 @@ const ObjectId = require('mongoose').Types.ObjectId;
 	POST 	/api/{v}/admin/integrations/add
 
 	POST 	/api/{v}/admin/integrations/:integrationId
+
+	DELETE 	/api/{v}/admin/integrations/:integrationId
  */
 exports.setup = (router) => {
 	router.post('/admin/integrations/add', exports.createIntegration);
@@ -18,7 +20,7 @@ exports.setup = (router) => {
 }
 
 exports.getIntegrations = function(req, res) {
-	IntegrationModel.find().sort({ created_ts : -1 })
+	IntegrationModel.find().populate('created_by').sort({ created_ts : -1 })
 		.then((integrations) => {
 			res.json({ integrations })
 		})

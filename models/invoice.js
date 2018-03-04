@@ -10,7 +10,7 @@ var schema = new Schema({
 	invoicing_date     	: { type : Date, required : true },
 	paid 				: { type : Boolean, default : false },
 	number 				: { type : Number },
-	direction			: { type : String, enum: ['in', 'out'], lowercase: true, require: true },
+	direction			: { type : String, enum: ['in', 'out'], lowercase: true, required: true },
 	attachment			: { type : String },
 
 	created_by 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'User', required : true },

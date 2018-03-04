@@ -201,6 +201,12 @@ function setupWorkEntries() {
 			time: 3600,
 			user: user,
 			created_ts: moment().add(-1, 'months').toDate()
+		},
+		{
+			objective: allIds.objectives[3],
+			time: 3600,
+			user: user,
+			created_ts: moment().add(-1, 'months').add(2, 'days').toDate()
 		}
 	])
 }

@@ -291,6 +291,7 @@ function getUsersWithIds(ids) {
  * message to slack
  * 
  * @param  {String} activityId 
+ * @param {Array} notifyAccounts Accounts to mention
  * @return {Promise}            
  */
 function sendActivityToSlack(activityId, notifyAccounts = []) {

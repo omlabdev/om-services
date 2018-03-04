@@ -3,7 +3,8 @@ const { setupUsers, dropUsers } = require('./setup/setup.users');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const { setup, tearDown } = require('./setup/setup.billing');
-const ProjectsApi = require('./../api/projects');
+const BillingApi = require('./../api/billing');
+const moment = require('moment');
 
 
 describe('billing', function() {
@@ -18,38 +19,32 @@ describe('billing', function() {
 				done(error);
 			});
 		});
-  });
+	});
 
-  after(function(done) {
-  	// remove test users
-  	dropUsers(() => {
-  		// close testing db connection
+	after(function(done) {
+		// remove test users
+		dropUsers(() => {
+			// close testing db connection
 	  	mongoose.disconnect(done);
-  	});
-  });
+		});
+	});
 
-  beforeEach(function(done) {
-  	setup.bind(sharedData)()
-  		.then(() => done())
-  		.catch(done);
-  })
+	beforeEach(function(done) {
+		setup.bind(sharedData)()
+			.then(() => done())
+			.catch(done);
+	})
 
-  afterEach(function(done) {
-  	tearDown()
-  		.then(() => done())
-  		.catch(done);
-  })
+	afterEach(function(done) {
+		tearDown()
+			.then(() => done())
+			.catch(done);
+	})
 
-	/**
-	 * Objective owners test
-	 *
-	 * The returned objectives should be the ones where the
-	 * current user is one of the owners
-	 */
 	describe("#getWorkEntriesForProject", function() {
 
 		it('should return every work entry linked to a project through objectives & tasks', function(done) {
-			ProjectsApi.getWorkEntriesForProject(sharedData.projects[0]._id)
+			BillingApi.getWorkEntriesForProject(sharedData.projects[0]._id)
 				.then(workEntries => {
 					// assertions
 					should.exist(workEntries);
@@ -64,7 +59,7 @@ describe('billing', function() {
 	describe("#calculateTotalExecuted", function() {
 
 		it('should return the total amount for all work entries', function(done) {
-			ProjectsApi.calculateTotalExecuted(sharedData.projects[0]._id)
+			BillingApi.calculateTotalExecuted(sharedData.projects[0]._id)
 				.then(total => {
 					// assertions
 					should.exist(total);
@@ -79,11 +74,27 @@ describe('billing', function() {
 	describe("#calculateThisMonthExecuted", function() {
 
 		it('should return total amount for this month\'s work entries', function(done) {
-			ProjectsApi.calculateThisMonthExecuted(sharedData.projects[1]._id)
+			BillingApi.calculateThisMonthExecuted(sharedData.projects[1]._id)
 				.then(total => {
 					// assertions
 					should.exist(total);
 					total.should.equal(3600);
+					done();
+				})
+				.catch(done)
+		})
+
+	})
+
+	describe("#calculateExecutedSince", function() {
+
+		it('should return total amount of work entries since a given date', function(done) {
+			const since = moment.utc().add(-1, 'months').add(1, 'days').format('YYYY-MM-DD');
+			BillingApi.calculateExecutedSince(sharedData.projects[1]._id, since)
+				.then(total => {
+					// assertions
+					should.exist(total);
+					total.should.equal(3600*2);
 					done();
 				})
 				.catch(done)

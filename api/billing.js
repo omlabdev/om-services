@@ -54,8 +54,6 @@ exports.updateInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	const invoice = req.body;
 
-	console.log(invoice);
-
 	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
 	// not using project id cause it may have changed
 	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice})
@@ -158,6 +156,17 @@ exports.getProjectsBillingWithVariables = function(projectId) {
 }
 
 /**
+ * Returns an array of invoices that matches the given 
+ * query filter.
+ * 
+ * @param  {Object} filter 
+ * @return {Promise}        
+ */
+exports.getInvoicesWithFilter = function(filter = {}) {
+	return InvoiceModel.find(filter).populate('project', 'name _id').lean()
+}
+
+/**
  * Groups all invoices in the corresponding projects, returning
  * an array of projects with invoices inside under *invoices*
  * to the resolved promise.
@@ -189,7 +198,6 @@ exports.groupInvoicesByProject = function(invoices, projectId) {
 			return projects;
 		})
 }
-
 
 /**
  * Here we calculate the following variables for each project
@@ -233,7 +241,7 @@ exports.calculateBillingVariables = function(projects) {
 }
 
 /**
- * Calculates the amount of hours executed for all given project
+ * Calculates the amount of hours executed for all given projects
  * this month and total.
  * 
  * @param  {Array} projects 
@@ -262,6 +270,16 @@ exports.calculateTotalExecuted = function(projectId) {
 
 exports.calculateThisMonthExecuted = function(projectId) {
 	return exports.getWorkEntriesForProject(projectId, getFilterForMonth(new Date()))
+		.then(workEntries => reduceWorkEntries(workEntries))
+}
+
+exports.calculateExecutedSince = function(projectId, sinceDate) {
+	return exports.getWorkEntriesForProject(projectId, getFilterSinceDate(sinceDate))
+		.then(workEntries => reduceWorkEntries(workEntries))
+}
+
+exports.calculateExecutedWithFilters = function(projectId, filters) {
+	return exports.getWorkEntriesForProject(projectId, filters)
 		.then(workEntries => reduceWorkEntries(workEntries))
 }
 
@@ -348,4 +366,8 @@ const getFilterForMonth = (date) => {
 	const fromDate = moment.utc(date).startOf('month').toDate();
 	const toDate = moment.utc(date).endOf('month').toDate();
 	return { created_ts: {$gte: fromDate, $lte: toDate} }
+}
+
+const getFilterSinceDate = (date) => {
+	return { created_ts: {$gte: moment.utc(date).toDate()} }
 }
