@@ -1,5 +1,5 @@
 const { eval } = require('./alarms_eval');
-const DEBUG  = process.env.NODE_ENV === 'development';
+const DEBUG  = true; // process.env.NODE_ENV === 'development';
 const DEFAULT_DELAY  = process.env.NODE_ENV === 'development' ? 10*1000 : 2*60*1000;
 
 /**
