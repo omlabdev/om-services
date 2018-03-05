@@ -16,7 +16,7 @@ exports.eval = async function () {
 	const alarms = await AlarmModel
 		.find({ enabled: true })
 		.populate('project_filter user_filter');
-	return Promise.all(alarms.map(exports._evalAlarm));
+	return Promise.all(alarms.map(a => { exports._evalAlarm(a, false) }));
 }
 
 /**
