@@ -3,7 +3,7 @@ const { setupUsers, dropUsers } = require('./setup/setup.users');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const { setup, tearDown } = require('./setup/setup.alarms');
-const AlarmsApi = require('./../api/alarms');
+const { _evalAlarm } = require('./../api/alarms/alarms_eval');
 const moment = require('moment');
 
 
@@ -41,7 +41,7 @@ describe('alarms', function() {
 			.catch(done);
 	})
 
-	describe("#_evalAlarm: hours executed", function() {
+	describe("_evalAlarm: hours executed", function() {
 
 		it('should run the alarm when executed hours for all users & all projects & all time exceed X', function(done) {
 			const alarm = {
@@ -55,7 +55,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(12);
 				summary.run.should.be.equal(true);
 				done();
@@ -75,7 +75,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(12);
 				summary.run.should.be.equal(true);
 				done();
@@ -95,7 +95,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(6);
 				summary.run.should.be.equal(true);
 				done();
@@ -115,7 +115,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(2);
 				summary.run.should.be.equal(true);
 				done();
@@ -135,7 +135,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				// summary.currentValue.should.be.equal(4); // see @whyiscommented
 				summary.currentValue.should.be.aboveOrEqual(4);
 				summary.currentValue.should.be.belowOrEqual(6);
@@ -158,7 +158,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				// summary.currentValue.should.be.equal(6); // see @whyiscommented
 				summary.currentValue.should.be.aboveOrEqual(4);
 				summary.currentValue.should.be.belowOrEqual(6);
@@ -181,7 +181,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				// summary.currentValue.should.be.equal(8); // see @whyiscommented
 				summary.currentValue.should.be.aboveOrEqual(4);
 				summary.currentValue.should.be.belowOrEqual(8);
@@ -205,7 +205,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.below(9);
 				summary.run.should.be.equal(false);
 				done();
@@ -225,7 +225,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(12);
 				summary.run.should.be.equal(false);
 				done();
@@ -235,7 +235,7 @@ describe('alarms', function() {
 
 	})
 
-	describe("#_evalAlarm: hours billed", function() {
+	describe("#runNow: hours billed", function() {
 
 		it('should run the alarm when billed hours for all projects & all time exceed X', function(done) {
 			const alarm = {
@@ -249,7 +249,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(3);
 				summary.run.should.be.equal(true);
 				done();
@@ -269,7 +269,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(1);
 				summary.run.should.be.equal(true);
 				done();
@@ -289,7 +289,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(2);
 				summary.run.should.be.equal(true);
 				done();
@@ -309,7 +309,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(1);
 				summary.run.should.be.equal(true);
 				done();
@@ -318,7 +318,7 @@ describe('alarms', function() {
 		})
 	})
 
-	describe("#_evalAlarm: objectives quantity", function() {
+	describe("#runNow: objectives quantity", function() {
 
 		it('should run the alarm when the number of objectives for all projects equals X', function(done) {
 			const alarm = {
@@ -332,7 +332,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(4);
 				summary.run.should.be.equal(true);
 				done();
@@ -352,7 +352,7 @@ describe('alarms', function() {
 				state_filter: 'completed',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(2);
 				summary.run.should.be.equal(true);
 				done();
@@ -372,7 +372,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(1);
 				summary.run.should.be.equal(true);
 				done();
@@ -392,7 +392,7 @@ describe('alarms', function() {
 				state_filter: 'active',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(1);
 				summary.run.should.be.equal(true);
 				done();
@@ -402,7 +402,7 @@ describe('alarms', function() {
 
 	})
 
-	describe("#_evalAlarm: tasks quantity", function() {
+	describe("#runNow: tasks quantity", function() {
 
 		it('should run the alarm when the number of tasks for all projects equals X', function(done) {
 			const alarm = {
@@ -416,7 +416,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(5);
 				summary.run.should.be.equal(true);
 				done();
@@ -436,7 +436,7 @@ describe('alarms', function() {
 				state_filter: '',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(2);
 				summary.run.should.be.equal(true);
 				done();
@@ -456,7 +456,7 @@ describe('alarms', function() {
 				state_filter: 'unassigned',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(1);
 				summary.run.should.be.equal(true);
 				done();
@@ -476,7 +476,7 @@ describe('alarms', function() {
 				state_filter: 'unassigned',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(0);
 				summary.run.should.be.equal(true);
 				done();
@@ -496,7 +496,7 @@ describe('alarms', function() {
 				state_filter: 'active',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(2);
 				summary.run.should.be.equal(true);
 				done();
@@ -516,7 +516,7 @@ describe('alarms', function() {
 				state_filter: 'active',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(1);
 				summary.run.should.be.equal(true);
 				done();
@@ -536,7 +536,7 @@ describe('alarms', function() {
 				state_filter: 'completed',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(2);
 				summary.run.should.be.equal(true);
 				done();
@@ -556,7 +556,7 @@ describe('alarms', function() {
 				state_filter: 'completed',
 			}
 			
-			AlarmsApi._evalAlarm(alarm, true).then(summary => {
+			_evalAlarm(alarm, true).then(summary => {
 				summary.currentValue.should.be.equal(2);
 				summary.run.should.be.equal(true);
 				done();

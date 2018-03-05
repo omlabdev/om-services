@@ -5,6 +5,7 @@ const { toObjects } = require('./../utils');
 const ObjectId = require('mongoose').Types.ObjectId;
 const ActivityApi = require('./activity');
 const BillingApi = require('./billing');
+const AlarmRunner = require('./alarms/AlarmRunner');
 
 /*
 	POST 	/api/{v}/objectives/add
@@ -53,6 +54,7 @@ exports.createObjective = function(req, res) {
 
 	Promise.all([createP, activityP])
 		.then(([doc, _]) => { res.json(doc) })
+		.then(_ => { AlarmRunner.runScheduled() })
 		.catch(e => { res.json({ error: e.message }) })
 }
 
@@ -109,6 +111,7 @@ exports.updateObjective = function(req, res) {
 
 	Promise.all([updateP, activityP])
 		.then(([doc, _]) => { res.json(doc) })
+		.then(_ => { AlarmRunner.runScheduled() })
 		.catch(e => { res.json({ error: e.message }) })
 }
 

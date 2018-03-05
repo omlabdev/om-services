@@ -3,6 +3,7 @@ const InvoiceModel = require('./../models/invoice');
 const WorkEntryModel = require('./../models/work_entry');
 const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
+const AlarmRunner = require('./alarms/AlarmRunner');
 const moment = require('moment');
 const multer = require('multer');
 
@@ -47,6 +48,7 @@ exports.addInvoice = function(req, res) {
 
 	InvoiceModel.create(invoice)
 		.then(result => { res.json(result) })
+		.then(_ => { AlarmRunner.runScheduled() })
 		.catch(e => { res.json({ error: e.message }) });
 }
 
@@ -58,6 +60,7 @@ exports.updateInvoice = function(req, res) {
 	// not using project id cause it may have changed
 	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice})
 		.then(result => { res.json(result) })
+		.then(_ => { AlarmRunner.runScheduled() })
 		.catch(e => { res.json({ error: e.message })})
 }
 

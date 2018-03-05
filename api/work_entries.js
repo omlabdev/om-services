@@ -4,6 +4,7 @@ const BillingApi = require('./billing');
 const ProjectModel = require('./../models/project');
 const { formatSecondsIntoTime } = require('../utils');
 const moment = require('moment');
+const AlarmRunner = require('./alarms/AlarmRunner');
 
 /*
 	GET 	/api/{v}/objectives/:id/work-entries
@@ -35,6 +36,7 @@ exports.createWorkEntry = function(req, res) {
 
 	Promise.all([createP, activityP])
 		.then(([doc, _]) => { res.json(doc) })
+		.then(_ => { AlarmRunner.runScheduled() })
 		.catch((e) => { res.json({ error: e.message }) });
 }
 
