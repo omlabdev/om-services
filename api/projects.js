@@ -19,8 +19,8 @@ exports.setup = (router) => {
 	router.get('/public/projects', exports.getProjectsPublic);
 
 	router.get('/projects', exports.getProjects);
-	router.post('/projects/add', upload.any(), exports.createProject);
-	router.post('/projects/:projectId', upload.any(), exports.updateProject);
+	router.post('/projects/add', exports.createProject);
+	router.post('/projects/:projectId', exports.updateProject);
 }
 
 exports.createProject = function(req, res) {
