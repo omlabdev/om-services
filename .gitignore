@@ -40,4 +40,4 @@ public/stylesheets/*.map
 public/attachments/*.*
 
 # Project images
-public/images/featured_projects/*.*
+public/images/featured_projects/*.(jpg|png|jpeg|gif|JPG|JPEG|GIF|PNG)
