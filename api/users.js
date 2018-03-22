@@ -44,14 +44,18 @@ exports.setup = (router) => {
  * @param  {Function} next 
  */
 exports.authMiddleware = function(req, res, next) {
-	const passthrou = [
+
+	console.log(req.url.toString())
+
+	const passthru = [
+		/^\/public\/.*?$/.test(req.url.toString()),
 		/users\/auth\/?$/.test(req.url.toString()),
 		/users\/auth-links\/?$/.test(req.url.toString()),
 		/users\/auth-link\/?$/.test(req.url.toString()) && req.method === 'POST',
 		req.method === 'OPTIONS'
 	]
 
-	const canPass = passthrou.reduce((prev, v) => v || prev, false);
+	const canPass = passthru.reduce((prev, v) => v || prev, false);
 	if (canPass) return next();
 
 	// check url for token as querystring

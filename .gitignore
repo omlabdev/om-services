@@ -38,3 +38,6 @@ public/stylesheets/*.map
 
 # Attachments
 public/attachments/*.*
+
+# Project images
+public/images/featured_projects/*.*
