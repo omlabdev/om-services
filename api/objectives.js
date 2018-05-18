@@ -102,7 +102,8 @@ exports.updateObjective = function(req, res) {
 	// Has to be after fetchP so it gets executed in second place
 	const updateP = fetchP
 		.then(_ => ObjectivesModel.findByIdAndUpdate(_id, { $set : req.body }))
-		.then(_ => ObjectivesModel.findById(_id).populate('related_task').lean());
+		.then(_ => ObjectivesModel.findById(_id).populate('related_task created_by owners deleted_by completed_by scratched_by'))
+		.then(d => d.toObject());
 	// create activity for update or completition of the objective, and
 	// send the old values and the new as extras
 	const activityP = Promise.all([fetchP, updateP])
