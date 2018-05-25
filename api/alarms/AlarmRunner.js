@@ -55,7 +55,6 @@ AlarmMemoryRunner.prototype._run = async function() {
 	DEBUG && console.log('[AlarmRunner] Running now..');
 	// run alarm eval
 	const summary = await eval();
-	// @TODO store result in DB
 	this.results.push(summary);
 	// tear down
 	this.isRunning = false;

@@ -55,13 +55,13 @@ exports.addInvoice = function(req, res) {
 exports.updateInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	const invoice = req.body;
-
 	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
+
 	// not using project id cause it may have changed
 	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice})
 		.then(result => { res.json(result) })
-		.then(_ => { AlarmRunner.runScheduled() })
-		.catch(e => { res.json({ error: e.message })})
+		.then(function() { AlarmRunner.runScheduled() })
+		.catch(e => { console.error(e); res.json({ error: e.message })})
 }
 
 exports.deleteInvoice = function(req, res) {

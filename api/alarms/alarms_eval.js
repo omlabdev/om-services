@@ -3,7 +3,6 @@ const AlarmModel = require('../../models/alarm');
 const ObjectiveModel = require('../../models/objective');
 const TaskModel = require('../../models/task');
 const IntegrationModel = require('../../models/integration');
-const BillingApi = require('../billing');
 const moment = require('moment');
 
 /**
@@ -80,6 +79,7 @@ async function _evalHoursExecutedAlarm(alarm) {
 		: [ (await ProjectModel.find().lean()).map(p => p._id) ]
 
 	// calculate for each project and transform secs to hours
+	const BillingApi = require('../billing');
 	const promises = projectsIds.map(pid => BillingApi.calculateExecutedWithFilters(pid, filters));
 	const hoursPerProject = (await Promise.all( promises )).map(secs => secs/3600);
 	const hours = hoursPerProject.reduce((t, h) => t+h, 0);
@@ -105,6 +105,7 @@ async function _evalHoursBilledAlarm(alarm) {
 		filters.project = alarm.project_filter._id;
 	}
 
+	const BillingApi = require('../billing');
 	const invoices = await BillingApi.getInvoicesWithFilter(filters);
 	const hours = invoices.map(i => i.billed_hours).reduce((t, h) => t+h, 0);
 	return hours;
