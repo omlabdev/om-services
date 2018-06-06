@@ -33,6 +33,7 @@ let upload = multer({ storage });
 	GET 	/api/{v}/billing/invoices/:invoiceId/html
  */
 exports.setup = (router) => {
+	router.get('/billing/invoices/query', exports.getInvoicesWithQuery);
 	router.get('/billing/invoices', exports.getInvoices);
 	router.get('/billing/projects', exports.getProjectsBilling);
 	router.get('/billing/projects/:projectId', exports.getBillingForProject);
@@ -68,6 +69,22 @@ exports.deleteInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	InvoiceModel.remove({ _id: invoiceId })
 		.then(result => { res.json(result) })
+		.catch(e => { res.json({ error: e.message }) })
+}
+
+/**
+ * Queries invoices with the given filter by querystring
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
+exports.getInvoicesWithQuery = function(req, res) {
+	const query = req.query;
+	InvoiceModel.find(query)
+		.populate('project', 'name _id')
+		.populate('created_by', 'name _id')
+		.lean()
+		.then(invoices => { res.json({ invoices }) })
 		.catch(e => { res.json({ error: e.message }) })
 }
 
@@ -165,7 +182,7 @@ exports.getProjectsBillingWithVariables = function(projectId) {
  * @param  {Object} filter 
  * @return {Promise}        
  */
-exports.getInvoicesWithFilter = function(filter = {}) {
+exports.queryInvoices= function(filter = {}) {
 	return InvoiceModel.find(filter).populate('project', 'name _id').lean()
 }
 
