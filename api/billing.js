@@ -99,6 +99,7 @@ exports.renderInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	InvoiceModel.findById({ _id: invoiceId })
 		.populate('project', 'name company_name')
+		.populate('created_by', 'name _id')
 		.then(invoice => {
 			res.render('invoice', { invoice })
 		})
@@ -114,6 +115,7 @@ exports.renderInvoice = function(req, res) {
 exports.getInvoices = function(req, res) {
 	InvoiceModel.find({})
 		.populate('project', 'name')
+		.populate('created_by', 'name _id')
 		.lean()
 		.sort({ invoicing_date: -1 })
 		.then(invoices => { res.json(invoices) })
@@ -169,6 +171,7 @@ exports.getProjectsBillingWithVariables = function(projectId) {
 	const query = projectId ? { project: projectId } : { project: {$ne: null} };
 	return InvoiceModel.find(query)
 		.populate('project', 'name _id')
+		.populate('created_by', 'name _id')
 		.lean()
 		.then(invoices => exports.groupInvoicesByProject(invoices, projectId))
 		.then(projects => exports.calculateBillingVariables(projects))
