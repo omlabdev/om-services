@@ -1,5 +1,6 @@
-var mongoose = require ('mongoose');
+var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
+var moment = require('moment');
 
 var schema = new Schema({
 	project 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'Project', required: false },
@@ -8,7 +9,7 @@ var schema = new Schema({
 	amount 				: { type : Number, required : true },
 	billed_hours 		: { type : Number },
 	invoicing_date     	: { type : Date, required : true },
-	paid 				: { type : Boolean, default : false },
+	paid_date 			: { type : Date, default: null },
 	number 				: { type : Number },
 	direction			: { type : String, enum: ['in', 'out'], lowercase: true, required: true },
 	attachment			: { type : String },
@@ -23,6 +24,10 @@ var schema = new Schema({
 	toJSON: {
 		virtuals: true
 	}
+});
+
+schema.virtual('paid').get(function() {
+	return !!this.paid_date && moment(this.paid_date) < moment();
 });
 
 module.exports = mongoose.model('Invoice', schema);

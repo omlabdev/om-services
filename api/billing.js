@@ -116,8 +116,8 @@ exports.getInvoices = function(req, res) {
 	InvoiceModel.find({})
 		.populate('project', 'name')
 		.populate('created_by', 'name _id')
-		.lean()
 		.sort({ invoicing_date: -1 })
+		.then(invoices => invoices.map(i => i.toObject())) // .toObject to have virtuals
 		.then(invoices => { res.json(invoices) })
 		.catch(e => { 
 			console.error(e);
@@ -172,7 +172,7 @@ exports.getProjectsBillingWithVariables = function(projectId) {
 	return InvoiceModel.find(query)
 		.populate('project', 'name _id')
 		.populate('created_by', 'name _id')
-		.lean()
+		.then(invoices => invoices.map(i => i.toObject())) // .toObject() to have virtuals
 		.then(invoices => exports.groupInvoicesByProject(invoices, projectId))
 		.then(projects => exports.calculateBillingVariables(projects))
 		.then(projects => projectId ? projects[0] : projects)
