@@ -1,0 +1,34 @@
+doctype html
+html
+	head
+		title Work entries
+		link(rel='stylesheet', href='/stylesheets/work_entries.css')
+	body
+		.wrapper
+			header
+				h1 Hours report
+				.user-info
+					h2 #{user.full_name}
+					
+			main
+
+				table
+					thead
+						tr
+							td Date
+							td Project
+							td Task
+							td Time
+					tbody
+						- var time = 0
+						for we in entries
+							tr
+								td= moment(we.created_ts).format('MM/DD')
+								td= we.objective.related_task ? we.objective.related_task.project.name : '---'
+								td= we.objective.related_task ? we.objective.related_task.title : we.objective.no_task_title
+								td  #{utils.formatSecondsIntoTime(we.time)}
+								- time += we.time
+					tfoot
+						tr
+							td(colspan='3') Total hours
+							td #{utils.formatSecondsIntoTime(time)}

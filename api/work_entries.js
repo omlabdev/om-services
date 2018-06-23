@@ -1,7 +1,9 @@
 const WorkEntryModel = require('./../models/work_entry');
+const TaskModel = require('./../models/task');
 const ActivityApi = require('./activity');
 const BillingApi = require('./billing');
 const ProjectModel = require('./../models/project');
+const UserModel = require('./../models/user');
 const { formatSecondsIntoTime } = require('../utils');
 const moment = require('moment');
 const AlarmRunner = require('./alarms/AlarmRunner');
@@ -9,13 +11,19 @@ const AlarmRunner = require('./alarms/AlarmRunner');
 /*
 	GET 	/api/{v}/objectives/:id/work-entries
 
+	GET 	/api/{v}/objectives/:id/work-entries/:id
+
 	GET 	/api/{v}/projects/:id/work-entries
+
+	GET 	/api/{v}/users/:id/work-entries
 
 	POST 	/api/{v}/objectives/:id/work-entries/add
 
 	DELETE	/api/{v}/objectives/:id/work-entries/:id
 
-	GET 	/api/{v}/projects/:id/work-entries/export/html
+	GET 	/api/{v}/projects/:id/work-entries/export/detailed/html
+
+	GET 	/api/{v}/projects/:id/work-entries/export/client/html
  */
 exports.setup = (router) => {
 	router.get('/objectives/:objectiveId/work-entries', exports.getWorkEntries);
@@ -24,6 +32,8 @@ exports.setup = (router) => {
 	router.get('/projects/:projectId/work-entries', exports.getWorkEntriesForProject);
 	router.get('/projects/:projectId/work-entries/export/detailed/html', exports.exportWorkEntriesDetailedViewForProject);
 	router.get('/projects/:projectId/work-entries/export/client/html', exports.exportWorkEntriesClientViewForProject);
+	router.get('/users/:userId/work-entries', exports.getWorkEntriesForUser);
+	router.get('/users/:userId/work-entries/export/html', exports.exportWorkEntriesForUser);
 }
 
 exports.createWorkEntry = function(req, res) {
@@ -66,12 +76,8 @@ exports.getWorkEntries = function(req, res) {
 	WorkEntryModel.find({ objective })
 		.populate('user')
 		.sort({ created_ts : -1 })
-		.then((entries) => {
-			res.json({ entries })
-		})
-		.catch((e) => {
-			res.json({ error: e.message })
-		})
+		.then((entries) => { res.json({ entries }) })
+		.catch((e) => { res.json({ error: e.message }) })
 }
 
 function createCreateActivity(workEntry, userId) {
@@ -92,6 +98,64 @@ function createDeleteActivity(workEntry, userId) {
 		user: userId.toString(),
 		meta: { objective : workEntry.objective } 
 	})
+}
+
+exports.getWorkEntriesForUser = function(req, res) {
+	const { userId } = req.params;
+	_getWorkEntriesForUser(userId, req.query)
+		.then(we => { res.json({ entries: we }) })
+		.catch(e => { res.json({ error: e.message }) })
+}
+
+/**
+ * Fetches all the work entries registered by the given
+ * user applying the given filters.
+ *
+ * If another userId is passed as part of the filters, the
+ * userId passed as first parameter will override the one
+ * inside the filters.
+ *
+ * Returns a promise for the array of work entries.
+ * 
+ * @param  {String} userId   
+ * @param  {Object} _filters 
+ * @return {Promise}          
+ */
+function _getWorkEntriesForUser(userId, _filters) {
+	// force userId as filter
+	const filters = Object.assign(_filters, { user: userId });
+	
+	// if project is filtered, remove for the we filter and 
+	// filter locally later through objective.related_task.project
+	let projectId = filters.project;
+	if (projectId) {
+		delete filters.project; 
+	}
+
+	const query = _formatFilters(filters);
+
+	return WorkEntryModel.find(query)
+		.sort({ created_ts: -1 })
+		.populate('user objective')
+		.then(we => TaskModel.populate(we, { // populate deeper level 
+			path: 'objective.related_task',
+			select: 'title project',
+			model: 'Task'
+		}))
+		.then(we => ProjectModel.populate(we, { // populate deeper deeper level 
+			path: 'objective.related_task.project',
+			select: 'name',
+			model: 'Project'
+		}))
+		.then(we => we.filter(filterByProject(projectId)))
+}
+
+function filterByProject(projectId = null) {
+	return function(we) {
+		if (!projectId) return true;
+		return we.objective.related_task 
+			&& we.objective.related_task.project.id === projectId;
+	}
 }
 
 exports.getWorkEntriesForProject = function(req, res) {
@@ -123,6 +187,26 @@ exports.exportWorkEntriesDetailedViewForProject = function(req, res) {
 }
 
 /**
+ * Renders a detailed HTML report of work entries for the specified
+ * user applying the filters sent on the request by querystring.
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
+exports.exportWorkEntriesForUser = function(req, res) {
+	const { userId } = req.params;
+
+	const userP = UserModel.findById(userId);
+	const weP = _getWorkEntriesForUser(userId, req.query);
+
+	Promise.all([userP, weP])
+		.then(([user, we]) => {
+			res.render('work_entries_user', { entries: we, user: user })
+		})
+		.catch(e => { res.render('error', { error: e }) })
+}
+
+/**
  * Renders a top level HTML report of work entries for the specified
  * project applying the filters sent on the request by querystring.
  *
@@ -145,8 +229,11 @@ exports.exportWorkEntriesClientViewForProject = function(req, res) {
 }
 
 /**
- * Fetches the work entries recorded for the given project id
- * after applying the given filters.
+ * Optimized way to fetch the work entries recorded for the 
+ * given project id after applying the given filters.
+ *
+ * Starts with the project and walks down to the tasks, then
+ * objectives and then work entries.
  *
  * Returns a Premise for a working entries array.
  * 
@@ -155,6 +242,18 @@ exports.exportWorkEntriesClientViewForProject = function(req, res) {
  * @return {Premise}           
  */
 function _getWorkEntriesForProject(projectId, _filters = {}) {
+	let filters = _formatFilters(_filters);
+	return BillingApi.getWorkEntriesForProject(projectId, filters, true);
+}
+
+/**
+ * Receives an object with filters sent over the request
+ * and re-formats them to make them Mongo-compatible.
+ * 
+ * @param  {Object} _filters 
+ * @return {Object}          
+ */
+function _formatFilters(_filters) {
 	let filters = Object.assign({}, _filters);
 
 	// remove empty filters
@@ -175,6 +274,6 @@ function _getWorkEntriesForProject(projectId, _filters = {}) {
 		delete(filters['dateTo']);
 	}
 
-	return BillingApi.getWorkEntriesForProject(projectId, filters, true);
+	return filters;
 }
 
