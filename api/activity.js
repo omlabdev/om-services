@@ -59,7 +59,6 @@ exports.createActivity = function(activity, extras = {}) {
 			return notifySlack(); // notify without mentions
 		
 		case "objective-created":
-			console.log(extras.new);
 			// notify only if owner is not creator or more than one owner
 			if (extras.new.owners.length > 1 
 				|| extras.new.owners[0].toString() !== extras.new.created_by.toString()) {

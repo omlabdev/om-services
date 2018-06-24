@@ -4,6 +4,7 @@ const ActivityApi = require('./activity');
 const BillingApi = require('./billing');
 const ProjectModel = require('./../models/project');
 const UserModel = require('./../models/user');
+const InvoiceModel = require('./../models/invoice');
 const { formatSecondsIntoTime } = require('../utils');
 const moment = require('moment');
 const AlarmRunner = require('./alarms/AlarmRunner');
@@ -26,7 +27,7 @@ const AlarmRunner = require('./alarms/AlarmRunner');
 	GET 	/api/{v}/projects/:id/work-entries/export/client/html
  */
 exports.setup = (router) => {
-	router.get('/objectives/:objectiveId/work-entries', exports.getWorkEntries);
+	router.get('/objectives/:objectiveId/work-entries', exports.getWorkEntriesForObjective);
 	router.post('/objectives/:objectiveId/work-entries/add', exports.createWorkEntry);
 	router.delete('/objectives/:objectiveId/work-entries/:workEntryId', exports.deleteWorkEntry);
 	router.get('/projects/:projectId/work-entries', exports.getWorkEntriesForProject);
@@ -71,7 +72,7 @@ exports.deleteWorkEntry = function(req, res) {
 		.catch((e) => { res.json({ error: e.message }) });
 }
 
-exports.getWorkEntries = function(req, res) {
+exports.getWorkEntriesForObjective = function(req, res) {
 	const objective = req.params.objectiveId;
 	WorkEntryModel.find({ objective })
 		.populate('user')
@@ -103,8 +104,31 @@ function createDeleteActivity(workEntry, userId) {
 exports.getWorkEntriesForUser = function(req, res) {
 	const { userId } = req.params;
 	_getWorkEntriesForUser(userId, req.query)
+		.then(_populateBilled(userId))
 		.then(we => { res.json({ entries: we }) })
 		.catch(e => { res.json({ error: e.message }) })
+}
+
+function _populateBilled(byUserId) {
+	return async workEntries => {
+		const query = { direction: 'in' };
+		if (byUserId) query.created_by = byUserId;
+		
+		const invoices = await InvoiceModel.find(query);
+		return workEntries.map(we => {
+			for (var i = 0; i < invoices.length; i++) {
+				// check if the work entry is in this invoice.
+				// we need to cast all _ids to string for the includes to work
+				const we_ids = invoices[i].work_entries.map(_id => _id.toString());
+				if (we_ids.includes(we.id)) {
+					// cast to object to add new props
+					return Object.assign(we.toObject(), { billed: true, paid: !!invoices[i].paid_date });
+				}
+			}
+			// cast to object to add new props
+			return Object.assign(we.toObject(), { billed: false, paid: false });
+		})
+	}
 }
 
 /**

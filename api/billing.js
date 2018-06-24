@@ -80,12 +80,23 @@ exports.deleteInvoice = function(req, res) {
  */
 exports.getInvoicesWithQuery = function(req, res) {
 	const query = req.query;
-	InvoiceModel.find(query)
+	exports.getInvoicesWithFilter(query)
+		.then(invoices => { res.json({ invoices }) })
+		.catch(e => { res.json({ error: e.message }) })
+}
+
+/**
+ * Queries invoices with the given filter object
+ * 
+ * @param  {Object} filter 
+ * @return {Promise}
+ */
+exports.getInvoicesWithFilter = function(filter) {
+	return InvoiceModel.find(filter)
+		.sort({ invoicing_date: -1 })
 		.populate('project', 'name _id')
 		.populate('created_by', 'name _id')
 		.lean()
-		.then(invoices => { res.json({ invoices }) })
-		.catch(e => { res.json({ error: e.message }) })
 }
 
 /**
