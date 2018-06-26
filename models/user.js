@@ -14,7 +14,11 @@ var schema = new Schema({
 	trello_account	: { type : String, lowercase : true },
 	git_account		: { type : String, lowercase : true },
 	
-	enabled 		: { type : Boolean, default : true }
+	enabled 		: { type : Boolean, default : true },
+
+	// freelancer fields
+	is_freelancer	: { type : Boolean, default : false },
+	hourly_rate 	: { type : Number, default : 0 },
 },{
 	toObject: {
 		virtuals: true

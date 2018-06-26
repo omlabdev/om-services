@@ -44,9 +44,6 @@ exports.setup = (router) => {
  * @param  {Function} next 
  */
 exports.authMiddleware = function(req, res, next) {
-
-	console.log(req.url.toString())
-
 	const passthru = [
 		/^\/public\/.*?$/.test(req.url.toString()),
 		/users\/auth\/?$/.test(req.url.toString()),
@@ -187,7 +184,7 @@ exports.authorizeUserWithLink = function(req, res) {
 }
 
 exports.getUserLinks = function(req, res) {
-	UsersModel.find()
+	UsersModel.find({}, 'username password _id')
 		.then(docs => {
 			const links = [];
 			docs.forEach(doc => {
