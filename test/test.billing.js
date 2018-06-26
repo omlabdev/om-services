@@ -5,6 +5,7 @@ mongoose.Promise = global.Promise;
 const { setup, tearDown } = require('./setup/setup.billing');
 const BillingApi = require('./../api/billing');
 const moment = require('moment');
+const InvoiceModel = require('./../models/invoice');
 
 
 describe('billing', function() {
@@ -98,6 +99,71 @@ describe('billing', function() {
 					done();
 				})
 				.catch(done)
+		})
+
+	})
+
+	describe.only("#invoiceWorkEntries", function() {
+
+		it('Should create an invoice with non-invoiced work entries', function(done) {
+			const user = sharedData.users[0]._id;
+
+			const invoice = {
+				description: "Test",
+				amount: 100,
+				invoicing_date: moment().toDate(),
+				direction: "in",
+				created_by: user,
+				billed_hours: 10,
+				receiver: "Nicolas",
+				work_entries: sharedData.workEntries.map(e => e._id)
+			};
+
+			BillingApi._addInvoice(invoice)
+				.then(result => {
+					should.exist(result);
+					result.work_entries.length.should.equal(sharedData.workEntries.length);
+					done();
+				})
+				.catch(done);
+		})
+
+		it('Should NOT create an invoice with already invoiced work entries', async function() {
+			const user = sharedData.users[0]._id;
+
+			const invoice1 = {
+				description: "Test",
+				amount: 100,
+				invoicing_date: moment().toDate(),
+				direction: "in",
+				created_by: user,
+				billed_hours: 10,
+				receiver: "Nicolas",
+				work_entries: sharedData.workEntries.map(e => e._id)
+			};
+
+			const invoice2 = {
+				description: "Test",
+				amount: 100,
+				invoicing_date: moment().toDate(),
+				direction: "in",
+				created_by: user,
+				billed_hours: 10,
+				receiver: "Nicolas",
+				work_entries: [sharedData.workEntries.map(e => e._id)[0]]
+			}
+
+			// create one
+			return BillingApi._addInvoice(invoice1)
+				.then(r => {
+					// try to create another one with same entries
+					return BillingApi._addInvoice(invoice2);
+				})
+				.then(result => { 
+					should.fail();
+				})
+				.should.eventually.be.rejected;
+			
 		})
 
 	})

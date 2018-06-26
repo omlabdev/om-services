@@ -14,12 +14,13 @@ var schema = new Schema({
 	created_by 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'User', required : true },
 	created_ts 		  	: { type : Date, default : Date.now },
 
+	billed_hours 		: { type : Number },
+	
 	// fields used for *out* invoices (to clients)
 	project 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'Project', required: false },
-	receiver 		  	: { type : String },
-	billed_hours 		: { type : Number },
 
 	// fields used bt *in* invoices (from providers to us)
+	receiver 		  	: { type : String },
 	work_entries 		: [{ type : mongoose.Schema.Types.ObjectId, ref : 'WorkEntry', required: false }],
 	
 }, {

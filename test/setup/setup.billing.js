@@ -4,6 +4,7 @@ const ObjectiveModel = require('../../models/objective');
 const TaskModel = require('../../models/task');
 const WorkEntryModel = require('../../models/work_entry');
 const ProjectModel = require('../../models/project');
+const InvoiceModel = require('../../models/invoice');
 const ObjectId = require('mongoose').Types.ObjectId;
 
 const allIds = {
@@ -28,15 +29,50 @@ exports.setup = function() {
 		})
 		.then((entries) => {
 			this.workEntries = entries;
-			return entries;
+			return setupInvoices.bind(this)()
+		})
+		.then((invoices) => {
+			this.invoices = invoices;
+			return invoices;
 		})
 }
 
 exports.tearDown = function() {
-	return WorkEntryModel.remove({})
+	return InvoiceModel.remove({})
+		.then(() => WorkEntryModel.remove({}))
 		.then(() => ObjectiveModel.remove({}))
 		.then(() => TaskModel.remove())
 		.then(() => ProjectModel.remove())
+}
+
+function setupInvoices() {
+	const user = this.users[0]._id;
+	const ids = allIds.projects;
+
+	return createInvoices([
+		{
+			invoicing_date: moment().toDate(),
+			amount: 55*80,
+			billed_hours: 80,
+			paid: true,
+			description: 'Sample invoice 1.1',
+			project: ids[0],
+			created_by: user,
+			work_entries: [],
+			direction: "out",
+		},
+		{
+			invoicing_date: moment().add(-1,'months').toDate(),
+			amount: 55*5,
+			billed_hours: 5,
+			paid: false,
+			description: 'Sample invoice 1.2',
+			project: ids[0],
+			created_by: user,
+			work_entries: [],
+			direction: "out",
+		}
+	])
 }
 
 function setupProjects() {
@@ -50,23 +86,6 @@ function setupProjects() {
 			hours_sold_unit: 'total',
 			hourly_rate: 55,
 			active: true,
-			invoices: [{
-				invoicing_date: moment().toDate(),
-				amount: 55*80,
-				billed_hours: 80,
-				paid: true,
-				description: 'Sample invoice 1.1',
-				project: ids[0],
-				created_by: user
-			},{
-				invoicing_date: moment().add(-1,'months').toDate(),
-				amount: 55*5,
-				billed_hours: 5,
-				paid: false,
-				description: 'Sample invoice 1.2',
-				project: ids[0],
-				created_by: user
-			}]	
 		},
 		{
 			_id: ids[1],
@@ -75,7 +94,6 @@ function setupProjects() {
 			hours_sold_unit: 'monthly',
 			hourly_rate: 55,
 			active: true,
-			invoices: []	
 		}
 	])
 }
@@ -224,6 +242,10 @@ function createTasks(items) {
 }
 function createWorkEntries(items) {
 	return createDocs(WorkEntryModel, items);
+}
+
+function createInvoices(items) {
+	return createDocs(InvoiceModel, items);
 }
 
 function createDocs(model, items) {

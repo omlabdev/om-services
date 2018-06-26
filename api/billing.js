@@ -37,20 +37,28 @@ exports.setup = (router) => {
 	router.get('/billing/invoices', exports.getInvoices);
 	router.get('/billing/projects', exports.getProjectsBilling);
 	router.get('/billing/projects/:projectId', exports.getBillingForProject);
-	router.post('/billing/invoices/add-invoice', upload.any(), exports.addInvoice);
+	router.post('/billing/invoices/add-invoice', upload.any(), addInvoice);
 	router.post('/billing/invoices/:invoiceId', upload.any(), exports.updateInvoice);
 	router.delete('/billing/invoices/:invoiceId', exports.deleteInvoice);
 	router.get('/billing/invoices/:invoiceId/html', exports.renderInvoice);
 }
 
-exports.addInvoice = function(req, res) {
+function addInvoice(req, res) {
 	const invoice = req.body;
-	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
-
-	InvoiceModel.create(invoice)
+	exports._addInvoice(invoice, req.files)
 		.then(result => { res.json(result) })
 		.then(_ => { AlarmRunner.runScheduled() })
 		.catch(e => { res.json({ error: e.message }) });
+}
+
+exports._addInvoice = async function(invoice, files = []) {
+	const doubleInvoicing = await exports.checkDoubleInvoicing(invoice);
+	if (doubleInvoicing.length > 0) {
+		throw new Error('At least one work entry has already been invoiced.');
+	}
+
+	invoice.attachment = files.length > 0 ? files[0].filename : null;
+	return InvoiceModel.create(invoice);		
 }
 
 exports.updateInvoice = function(req, res) {
@@ -198,6 +206,21 @@ exports.getProjectsBillingWithVariables = function(projectId) {
  */
 exports.queryInvoices= function(filter = {}) {
 	return InvoiceModel.find(filter).populate('project', 'name _id').lean()
+}
+
+/**
+ * If the invoice contains work entries, checks that none of 
+ * the work entries are already registered on another invoice.
+ * 
+ * @param  {Object} invoice 
+ * @return {Promise}         Resolves with an array of duplicated entries
+ */
+exports.checkDoubleInvoicing = function(invoice) {
+	const entries = invoice.work_entries;
+	const query = {
+		work_entries: { $elemMatch: { $in: invoice.work_entries } }
+	}
+	return InvoiceModel.find(query)
 }
 
 /**
