@@ -120,6 +120,9 @@ exports.updateObjective = function(req, res) {
 /**
  * Deleted an objective by setting deleted = true.
  * 
+ * If the objective has work entries, the work entries
+ * are permanently deleted.
+ * 
  * @param  {Object} req 
  * @param  {Object} res 
  */
@@ -130,6 +133,16 @@ exports.deleteObjective = function(req, res) {
 		.catch((e) => { res.json({ error: e.message }) })
 }
 
+/**
+ * Deleted an objective by setting deleted = true.
+ * 
+ * If the objective has work entries, the work entries
+ * are permanently deleted.
+ * 
+ * @param  {Object} objectiveId 
+ * @param  {Object} userId
+ * @return {Promise} 
+ */
 exports._deleteObjective = function(_id, userId) {
 	// delete objective
 	const deleteP = ObjectivesModel.findByIdAndUpdate(_id, {
