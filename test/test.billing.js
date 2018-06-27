@@ -103,7 +103,7 @@ describe('billing', function() {
 
 	})
 
-	describe.only("#invoiceWorkEntries", function() {
+	describe("#invoiceWorkEntries", function() {
 
 		it('Should create an invoice with non-invoiced work entries', function(done) {
 			const user = sharedData.users[0]._id;
@@ -128,7 +128,7 @@ describe('billing', function() {
 				.catch(done);
 		})
 
-		it('Should NOT create an invoice with already invoiced work entries', async function() {
+		it('Should not create an invoice with already invoiced work entries', async function() {
 			const user = sharedData.users[0]._id;
 
 			const invoice1 = {

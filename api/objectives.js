@@ -1,6 +1,7 @@
 const moment = require('moment');
 const ObjectivesModel = require('./../models/objective');
 const TasksModel = require('./../models/task');
+const WorkEntryModel = require('./../models/work_entry');
 const { toObjects } = require('./../utils');
 const ObjectId = require('mongoose').Types.ObjectId;
 const ActivityApi = require('./activity');
@@ -124,17 +125,24 @@ exports.updateObjective = function(req, res) {
  */
 exports.deleteObjective = function(req, res) {
 	const _id = req.params.objectiveId;
-	const deleteP = ObjectivesModel.findByIdAndUpdate(_id, {
-			deleted:true, 
-			deleted_ts: Date.now(), 
-			deleted_by: req.currentUser._id
-		})
-	const activityP = deleteP.then(doc => 
-		createActivity(doc, req.currentUser._id, 'deleted'))
-
-	Promise.all([deleteP, activityP])
-		.then(([doc, _]) => { res.json(doc) })
+	exports._deleteObjective(_id, req.currentUser._id)
+		.then(([doc, _, __]) => { res.json(doc) })
 		.catch((e) => { res.json({ error: e.message }) })
+}
+
+exports._deleteObjective = function(_id, userId) {
+	// delete objective
+	const deleteP = ObjectivesModel.findByIdAndUpdate(_id, {
+		deleted: true, 
+		deleted_ts: Date.now(), 
+		deleted_by: userId,
+	})
+	// delete work entries
+	const deleteWe = deleteP.then(_ => WorkEntryModel.remove({ objective: _id }));
+	// delete activity
+	const activityP = deleteP.then(doc => createActivity(doc, userId, 'deleted'));
+
+	return Promise.all([deleteP, deleteWe, activityP]);
 }
 
 /**

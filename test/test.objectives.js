@@ -1,14 +1,14 @@
 const should = require('should');
 const ObjectivesApi = require('../api/objectives');
 const ObjectiveModel = require('../models/objective');
+const WorkEntryModel = require('../models/work_entry');
 const { setupUsers, dropUsers } = require('./setup/setup.users');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const async = require('async');
 const moment = require('moment');
-const { 
-	setupObjectivesForDifferentOwners
-} = require('./setup/setup.objectives');
+const { setupObjectivesForDifferentOwners } = require('./setup/setup.objectives');
+const { setupWorkEntries } = require('./setup/setup.work_entries');
 
 
 describe('objectives', function() {
@@ -44,6 +44,7 @@ describe('objectives', function() {
 
   beforeEach(function(done) {
   	setupObjectivesForDifferentOwners.bind(sharedData)()
+  		.then(objectives => { sharedData.objectives = objectives })
   		.then(() => done())
   		.catch(done)
   })
@@ -115,6 +116,33 @@ describe('objectives', function() {
 					done();
 				})
 				.catch(done) 
+		})
+
+	})
+
+	describe('#delete', function() {
+
+		it('Should delete work entries when deleting an objective', function(done) {
+			const userId = sharedData.users[0]._id;
+			const objectiveId = sharedData.objectives[0]._id;
+			
+			// setup work entries for objectives
+			setupWorkEntries.bind(sharedData)()
+				.then(we => { sharedData.work_entries = we })
+				.then(_ => ObjectivesApi._deleteObjective(objectiveId, userId))
+				.then(([doc, _, __]) => {
+					// assertions
+					doc._id.toString().should.equal(objectiveId.toString());
+
+					// check if work entries were deleted
+					const deletedIds = sharedData.work_entries.slice(0, 3).map(w => w._id);
+					return WorkEntryModel.find({ _id: { $in: deletedIds } })
+				})
+				.then(docs => {
+					docs.length.should.equal(0);
+					done();
+				})
+				.catch(done);
 		})
 
 	})

@@ -6,6 +6,7 @@ const WorkEntryModel = require('../../models/work_entry');
 const ProjectModel = require('../../models/project');
 const InvoiceModel = require('../../models/invoice');
 const ObjectId = require('mongoose').Types.ObjectId;
+const utils = require('./setup.utils');
 
 const allIds = {
 	projects: [new ObjectId(), new ObjectId()],
@@ -288,36 +289,20 @@ function setupInvoices() {
 }
 
 function createProjects(items) {
-	return createDocs(ProjectModel, items);
+	return utils.createDocs(ProjectModel, items);
 }
 
 function createObjectives(items) {
-	return createDocs(ObjectiveModel, items);
+	return utils.createDocs(ObjectiveModel, items);
 }
 
 function createTasks(items) {
-	return createDocs(TaskModel, items);
+	return utils.createDocs(TaskModel, items);
 }
 function createWorkEntries(items) {
-	return createDocs(WorkEntryModel, items);
+	return utils.createDocs(WorkEntryModel, items);
 }
 
 function createInvoices(items) {
-	return createDocs(InvoiceModel, items);
-}
-
-function createDocs(model, items) {
-	return new Promise((resolve, reject) => {
-		let createdDocs = [];
-	  	async.eachSeries(items, (o, d) => {
-	  		model.create(o, (error, doc) => {
-	  			if (error) return d(error);
-	  			createdDocs.push(doc);
-	  			d();
-	  		})
-	  	},(error) => {
-	  		if (error) return reject(error);
-	  		return resolve(createdDocs);
-	  	})
-  	})
+	return utils.createDocs(InvoiceModel, items);
 }

@@ -1,6 +1,7 @@
 const async = require('async');
 const moment = require('moment');
 const ObjectiveModel = require('../../models/objective');
+const utils = require('./setup.utils');
 
 exports.setupObjectivesForToday = function() {
 	const todayDate = moment.utc().toDate();
@@ -396,11 +397,6 @@ exports.setupObjectivesForDifferentOwners = function() {
   ])
 }
 
-function createObjectives(objectives) {
-	return new Promise((resolve, reject) => {
-  	async.each(objectives, (o, d) => ObjectiveModel.create(o, d), (error) => {
-  		if (error) return reject(error);
-  		return resolve();
-  	})
-  })
+function createObjectives(items) {
+	return utils.createDocs(ObjectiveModel, items);
 }

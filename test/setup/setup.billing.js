@@ -1,4 +1,3 @@
-const async = require('async');
 const moment = require('moment');
 const ObjectiveModel = require('../../models/objective');
 const TaskModel = require('../../models/task');
@@ -6,6 +5,8 @@ const WorkEntryModel = require('../../models/work_entry');
 const ProjectModel = require('../../models/project');
 const InvoiceModel = require('../../models/invoice');
 const ObjectId = require('mongoose').Types.ObjectId;
+const utils = require('./setup.utils');
+const { setupWorkEntries } = require('./setup.work_entries');
 
 const allIds = {
 	projects: [new ObjectId(), new ObjectId()],
@@ -172,94 +173,21 @@ function setupObjectives() {
 	])
 }
 
-function setupWorkEntries() {
-	const user = this.users[0]._id;
-	return createWorkEntries([
-		{
-			objective: allIds.objectives[0],
-			time: 3600*10,
-			user: user
-		},
-		{
-			objective: allIds.objectives[0],
-			time: 3600*2,
-			user: user
-		},
-		{
-			objective: allIds.objectives[0],
-			time: 3600*3,
-			user: user
-		},
-		{
-			objective: allIds.objectives[1],
-			time: 3600*12,
-			user: user,
-			created_ts: moment().add(-2, 'months').toDate()
-		},
-		{
-			objective: allIds.objectives[2],
-			time: 3600,
-			user: user,
-			created_ts: moment().add(-2, 'months').toDate()
-		},
-		{
-			objective: allIds.objectives[2],
-			time: 3600,
-			user: user,
-			created_ts: moment().add(-2, 'months').toDate()
-		},
-		{
-			objective: allIds.objectives[3],
-			time: 3600,
-			user: user,
-			created_ts: moment().toDate()
-		},
-		{
-			objective: allIds.objectives[3],
-			time: 3600,
-			user: user,
-			created_ts: moment().add(-1, 'months').toDate()
-		},
-		{
-			objective: allIds.objectives[3],
-			time: 3600,
-			user: user,
-			created_ts: moment().add(-1, 'months').add(2, 'days').toDate()
-		}
-	])
-}
-
 function createProjects(items) {
-	return createDocs(ProjectModel, items);
+	return utils.createDocs(ProjectModel, items);
 }
 
 function createObjectives(items) {
-	return createDocs(ObjectiveModel, items);
+	return utils.createDocs(ObjectiveModel, items);
 }
 
 function createTasks(items) {
-	return createDocs(TaskModel, items);
+	return utils.createDocs(TaskModel, items);
 }
 function createWorkEntries(items) {
-	return createDocs(WorkEntryModel, items);
+	return utils.createDocs(WorkEntryModel, items);
 }
 
 function createInvoices(items) {
-	return createDocs(InvoiceModel, items);
-}
-
-function createDocs(model, items) {
-	return new Promise((resolve, reject) => {
-		let createdDocs = [];
-	  	async.eachSeries(items, (o, d) => {
-	  		model.create(o, (error, doc) => {
-	  			if (error) return d(error);
-	  			createdDocs.push(doc);
-	  			d();
-	  		})
-	  	},(error) => {
-	  		if (error) return reject(error);
-	  		return resolve(createdDocs);
-	  	})
-  	})
+	return utils.createDocs(InvoiceModel, items);
 }

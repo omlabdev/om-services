@@ -2,6 +2,7 @@ const async = require('async');
 const TasksModel = require('../../models/task');
 const ObjectivesModel = require('../../models/objective');
 const ProjectsModel = require('../../models/project');
+const utils = require('./setup.utils');
 
 exports.setupTasks = function() {
 	const user = this.users[0]._id;
@@ -69,27 +70,10 @@ exports.setupObjectives = function() {
   ])
 }
 
-
-
 function createTasks(tasks) {
-	return new Promise((resolve, reject) => {
-		const taskDocs = [];
-  	async.each(tasks, (o, done) => TasksModel.create(o, (e, d) => {
-  		if (e) return done(e);
-  		taskDocs.push(d);
-  		done();
-  	}), (error) => {
-  		if (error) return reject(error);
-  		return resolve(taskDocs);
-  	})
-  })
+	return utils.createDocs(TasksModel, tasks);
 }
 
 function createObjectives(objectives) {
-	return new Promise((resolve, reject) => {
-  	async.each(objectives, (o, d) => ObjectivesModel.create(o, d), (error) => {
-  		if (error) return reject(error);
-  		return resolve();
-  	})
-  })
+	return utils.createDocs(ObjectivesModel, objectives);
 }
