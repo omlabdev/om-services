@@ -8,12 +8,15 @@ const moment = require('moment');
 /**
  * Evalues each alarm and gets the summary back.
  * Returns a promise that resolvs with all the summaries.
- * 
+ *
+ * @param {Object} filters 
  * @return {Promise}
  */
-exports.eval = async function () {
+exports.eval = async function (filters = {}) {
+	const query = Object.assign({}, filters, { enabled: true });
+	console.log('[alarm eval] query: ', JSON.stringify(query));
 	const alarms = await AlarmModel
-		.find({ enabled: true })
+		.find(query)
 		.populate('project_filter user_filter');
 	return Promise.all(alarms.map(a => exports._evalAlarm(a, false) ));
 }

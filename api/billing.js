@@ -3,7 +3,7 @@ const InvoiceModel = require('./../models/invoice');
 const WorkEntryModel = require('./../models/work_entry');
 const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
-const AlarmRunner = require('./alarms/AlarmRunner');
+const { runAlarms } = require('./alarms');
 const moment = require('moment');
 const multer = require('multer');
 
@@ -46,15 +46,18 @@ exports.setup = (router) => {
 function addInvoice(req, res) {
 	const invoice = req.body;
 	exports._addInvoice(invoice, req.files)
-		.then(result => { res.json(result) })
-		.then(_ => { AlarmRunner.runScheduled() })
+		.then(doc => { res.json(doc); return doc; })
+		.then(doc => runAlarms(doc, InvoiceModel))
 		.catch(e => { res.json({ error: e.message }) });
 }
 
 exports._addInvoice = async function(invoice, files = []) {
-	const doubleInvoicing = await exports.checkDoubleInvoicing(invoice);
-	if (doubleInvoicing.length > 0) {
-		throw new Error('At least one work entry has already been invoiced.');
+	// check double invoicing if the invoice is to us
+	if (invoice.direction === 'in') {
+		const doubleInvoicing = await exports.checkDoubleInvoicing(invoice);
+		if (doubleInvoicing.length > 0) {
+			throw new Error('At least one work entry has already been invoiced.');
+		}
 	}
 
 	invoice.attachment = files.length > 0 ? files[0].filename : null;
@@ -67,9 +70,9 @@ exports.updateInvoice = function(req, res) {
 	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
 
 	// not using project id cause it may have changed
-	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice})
-		.then(result => { res.json(result) })
-		.then(function() { AlarmRunner.runScheduled() })
+	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice}, {new: true})
+		.then(doc => { res.json(doc); return doc; })
+		.then(doc => runAlarms(doc, InvoiceModel))
 		.catch(e => { console.error(e); res.json({ error: e.message })})
 }
 

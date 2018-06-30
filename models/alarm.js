@@ -1,9 +1,12 @@
 var mongoose = require ('mongoose');
 var Schema = mongoose.Schema;
 
+var measures = ['hours_executed', 'hours_billed', 'objectives_quantity', 'tasks_quantity'];
+
 var schema = new Schema({
 	name 			: { type : String, required : true },
-	measure 		: { type : String, required : true, lowercase : true },
+	measure 		: { type : String, required : true, enum : measures, lowercase : true },
+
 	user_filter 	: { type : Schema.Types.ObjectId, ref : 'User' },
 	project_filter 	: { type : Schema.Types.ObjectId, ref : 'Project' },
 	date_filter 	: { type : String, default : 'ever' },

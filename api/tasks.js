@@ -3,7 +3,7 @@ const ObjectiveModel = require('./../models/objective');
 const ActivityModel = require('./../models/activity');
 const ObjectId = require('mongoose').Types.ObjectId;
 const ActivityApi = require('./activity');
-const AlarmRunner = require('./alarms/AlarmRunner');
+const { runAlarms } = require('./alarms');
 
 /*
 	POST 	/api/{v}/tasks/add
@@ -30,8 +30,8 @@ exports.createTask = function(req, res) {
 		createCreateActivity(doc, doc.created_by));
 
 	Promise.all([createP, activityP])
-		.then(([doc, _]) => { res.json(doc) })
-		.then(_ => { AlarmRunner.runScheduled() })
+		.then(([doc, _]) => { res.json(doc); return doc; })
+		.then(doc => runAlarms(doc, TaskModel))
 		.catch((e) => { res.json({ error: e.message }) });
 }
 

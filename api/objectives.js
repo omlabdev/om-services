@@ -6,7 +6,7 @@ const { toObjects } = require('./../utils');
 const ObjectId = require('mongoose').Types.ObjectId;
 const ActivityApi = require('./activity');
 const BillingApi = require('./billing');
-const AlarmRunner = require('./alarms/AlarmRunner');
+const { runAlarms } = require('./alarms');
 
 /*
 	POST 	/api/{v}/objectives/add
@@ -54,8 +54,8 @@ exports.createObjective = function(req, res) {
 	});
 
 	Promise.all([createP, activityP])
-		.then(([doc, _]) => { res.json(doc) })
-		.then(_ => { AlarmRunner.runScheduled() })
+		.then(([doc, _]) => { res.json(doc); return doc; })
+		.then(doc => runAlarms(doc, ObjectivesModel))
 		.catch(e => { res.json({ error: e.message }) })
 }
 
@@ -112,8 +112,8 @@ exports.updateObjective = function(req, res) {
 			createActivity(newDoc, req.currentUser._id, event, { old: oldDoc, new: newDoc }));
 
 	Promise.all([updateP, activityP])
-		.then(([doc, _]) => { res.json(doc) })
-		.then(_ => { AlarmRunner.runScheduled() })
+		.then(([doc, _]) => { res.json(doc); return doc; })
+		.then(doc => runAlarms(doc, ObjectivesModel))
 		.catch(e => { res.json({ error: e.message }) })
 }
 

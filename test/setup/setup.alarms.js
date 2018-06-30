@@ -5,6 +5,7 @@ const TaskModel = require('../../models/task');
 const WorkEntryModel = require('../../models/work_entry');
 const ProjectModel = require('../../models/project');
 const InvoiceModel = require('../../models/invoice');
+const AlarmModel = require('../../models/alarm');
 const ObjectId = require('mongoose').Types.ObjectId;
 const utils = require('./setup.utils');
 
@@ -40,6 +41,7 @@ exports.setup = function() {
 
 exports.tearDown = function() {
 	return WorkEntryModel.remove({})
+		.then(() => AlarmModel.remove({}))
 		.then(() => InvoiceModel.remove({}))
 		.then(() => ObjectiveModel.remove({}))
 		.then(() => TaskModel.remove())

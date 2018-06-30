@@ -3,9 +3,10 @@ const { setupUsers, dropUsers } = require('./setup/setup.users');
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const { setup, tearDown } = require('./setup/setup.alarms');
-const { _evalAlarm } = require('./../api/alarms/alarms_eval');
+const { _evalAlarm, eval } = require('./../api/alarms/alarms_eval');
 const moment = require('moment');
-
+const AlarmRunner = require('./../api/alarms/AlarmRunner');
+const AlarmModel = require('./../models/alarm');
 
 describe('alarms', function() {
 	const sharedData = { };
@@ -562,6 +563,170 @@ describe('alarms', function() {
 				done();
 			})
 			.catch(done);
+		})
+
+	})
+
+	describe('Alarm Runner', function() {
+
+		it('Should generate a simple query filter when there\'s just one filter', function() {
+			const filters = [{ project_filter: sharedData.projects[0]._id }];
+			const result = AlarmRunner._aggregateFilters(filters);
+			result.should.have.keys('project_filter');
+		})
+
+		it('Should generate an OR query filter when there\'re two filters', function() {
+			const filters = [{ project_filter: sharedData.projects[0]._id }, { project_filter: sharedData.projects[1]._id }];
+			const result = AlarmRunner._aggregateFilters(filters);
+			result.should.have.keys('$or');
+			result['$or'].length.should.be.equal(2);
+		})
+
+		it('Should generate an OR query filter when there\'re more than 2 filters', function() {
+			const filters = [
+				{ project_filter: sharedData.projects[0]._id }, 
+				{ project_filter: sharedData.projects[1]._id }, 
+				{ measure: 'billed_hours' }
+			];
+			const result = AlarmRunner._aggregateFilters(filters);
+			result.should.have.keys('$or');
+			result['$or'].length.should.be.equal(3);
+		})
+
+	})
+
+	describe.only('#eval', function() {
+		it('Should only evaluate the alarms that match the filter', function(done) {
+
+			const alarms = [
+				{
+					name: 'test alarm',
+					measure: 'tasks_quantity',
+					condition_op: '==',
+					condition_value: 2,
+					date_filter: null,
+					project_filter: sharedData.projects[0],
+					user_filter: null,
+					state_filter: 'completed',
+					created_by: sharedData.users[0]._id
+				},
+				{
+					name: 'test alarm 2',
+					measure: 'hours_billed',
+					condition_op: '>=',
+					condition_value: 2,
+					date_filter: null,
+					project_filter: sharedData.projects[1],
+					user_filter: null,
+					state_filter: null,
+					created_by: sharedData.users[0]._id
+				}
+			]
+
+			AlarmModel.create(alarms)
+				.then(_ => {
+					const filters = { project_filter: sharedData.projects[0]._id };
+					return eval(filters)
+				})
+				.then(summary => {
+					summary.should.have.length(1);
+					summary[0].name.should.equal('test alarm');
+					done();
+				})
+				.catch(done);
+		})
+
+		it('Should only evaluate the alarms that match the filters', function(done) {
+			const alarms = [
+				{
+					name: 'test alarm',
+					measure: 'tasks_quantity',
+					condition_op: '==',
+					condition_value: 2,
+					date_filter: null,
+					project_filter: sharedData.projects[0],
+					user_filter: null,
+					state_filter: 'completed',
+					created_by: sharedData.users[0]._id
+				},
+				{
+					name: 'test alarm 2',
+					measure: 'hours_billed',
+					condition_op: '>=',
+					condition_value: 2,
+					date_filter: null,
+					project_filter: sharedData.projects[0],
+					user_filter: null,
+					state_filter: null,
+					created_by: sharedData.users[0]._id
+				}
+			]
+
+			AlarmModel.create(alarms)
+				.then(_ => {
+					const filters = { project_filter: sharedData.projects[0]._id };
+					return eval(filters)
+				})
+				.then(summary => {
+					summary.should.have.length(2);
+					done();
+				})
+				.catch(done);
+		})
+
+		it('Should only evaluate the alarms that match the filters when filtering multiple fields', function(done) {
+			const alarms = [
+				{
+					name: 'test alarm',
+					measure: 'hours_billed',
+					condition_op: '>=',
+					condition_value: 2,
+					date_filter: null,
+					project_filter: sharedData.projects[0],
+					user_filter: null,
+					state_filter: null,
+					created_by: sharedData.users[0]._id
+				}, {
+					name: 'test alarm 2',
+					measure: 'objectives_quantity',
+					condition_op: '>=',
+					condition_value: 2,
+					date_filter: null,
+					project_filter: sharedData.projects[1],
+					user_filter: null,
+					state_filter: null,
+					created_by: sharedData.users[0]._id
+				}, {
+					name: 'test alarm 3',
+					measure: 'objectives_quantity',
+					condition_op: '>=',
+					condition_value: 2,
+					date_filter: null,
+					project_filter: sharedData.projects[0],
+					user_filter: null,
+					state_filter: null,
+					created_by: sharedData.users[0]._id
+				}
+			]
+
+			AlarmModel.create(alarms)
+				.then(_ => {
+					const filters = {
+						$or: [{
+							project_filter: sharedData.projects[0]._id, 
+							measure: 'hours_billed',
+						}, {
+							project_filter: sharedData.projects[1]._id, 
+							measure: 'objectives_quantity',
+						}]
+					}
+					return eval(filters)
+				})
+				.then(summary => {
+					summary.should.have.length(2);
+					done();
+				})
+				.catch(done);
 		})
 
 	})

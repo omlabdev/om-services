@@ -7,7 +7,7 @@ const UserModel = require('./../models/user');
 const InvoiceModel = require('./../models/invoice');
 const { formatSecondsIntoTime } = require('../utils');
 const moment = require('moment');
-const AlarmRunner = require('./alarms/AlarmRunner');
+const { runAlarms } = require('./alarms');
 
 /*
 	GET 	/api/{v}/objectives/:id/work-entries
@@ -46,8 +46,8 @@ exports.createWorkEntry = function(req, res) {
 		createCreateActivity(doc, doc.user));
 
 	Promise.all([createP, activityP])
-		.then(([doc, _]) => { res.json(doc) })
-		.then(_ => { AlarmRunner.runScheduled() })
+		.then(([doc, _]) => { res.json(doc); return doc; })
+		.then(doc => runAlarms(doc, WorkEntryModel))
 		.catch((e) => { res.json({ error: e.message }) });
 }
 
