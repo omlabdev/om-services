@@ -140,10 +140,19 @@ async function getAlarmFiltersForModel(doc, model) {
 				}
 			}
 			// build alarm filters
-			const filters = { 
-				measure: 'objectives_quantity', 
-				$and: [ { $or: [ { user_filter: null }, { user_filter: { $in: ownersIds } } ] } ],
-			};
+			const filters = {
+				$and: [
+					{ 
+						$or: [
+							{ measure: 'tasks_quantity' },
+							{ 
+								measure: 'objectives_quantity', 
+								$or: [ { user_filter: null }, { user_filter: { $in: ownersIds } } ],
+							},
+						]
+					}
+				]
+			}
 			if (doc.progress === 1) {
 				filters['$and'].push({ $or: [ { state_filter: 'completed' }, { state_filter: '' } ] });
 			} else {
@@ -152,7 +161,7 @@ async function getAlarmFiltersForModel(doc, model) {
 			if (projectId) {
 				filters['$and'].push({ $or: [ { project_filter: projectId }, { project_filter: null } ] });
 			}
-			return filters; // add tasks_quantity for assigned tasks!!
+			return filters;
 		}
 
 		case TaskModel: {

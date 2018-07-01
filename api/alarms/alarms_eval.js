@@ -14,7 +14,6 @@ const moment = require('moment');
  */
 exports.eval = async function (filters = {}) {
 	const query = Object.assign({}, filters, { enabled: true });
-	console.log('[alarm eval] query: ', JSON.stringify(query));
 	const alarms = await AlarmModel
 		.find(query)
 		.populate('project_filter user_filter');
