@@ -93,8 +93,6 @@ exports.authMiddleware = function(req, res, next) {
 function doTokenAuth(token, req, res, next) {
 	const auth = token.replace(/Basic:/i, '');
 
-	console.log("Authorizing with token");
-
 	const [ encodedUsername, encodedPassword ] = auth.split(':');
 	if (!encodedUsername || !encodedPassword) 
 		return res.sendStatus(401);
@@ -133,8 +131,6 @@ function doIntegrationAuth(token, service, req, res, next) {
 	const auth = token.replace(new RegExp(serviceToPrefix[service]+':', 'i'), '');
 	const [ username, theToken ] = auth.split(':');
 
-	console.log('Authorizing with ', service);
-
 	if (!username || !theToken || theToken !== serviceToToken[service])
 		return res.sendStatus(401);
 
@@ -169,7 +165,6 @@ function decodeUserAuthValue(encodedValue) {
 }
 
 function encodeAuthValue(decodedValue) {
-	console.log("DECODED VALUE", decodedValue);
 	return new Buffer(decodedValue).toString('base64');
 }
 
@@ -209,7 +204,7 @@ exports.getUserLinks = function(req, res) {
 }
 
 exports.getCurrentUserAuthLink = function(req, res) {
-	UsersModel.findOne({ username : req.currentUser.username })
+	UsersModel.findOne({ username : req.currentUser.username }, 'username password _id')
 		.then(doc => {
 			res.json({ link : getAuthLinkForUsernameAndPassword(doc._id, doc.username, doc.password) });
 		})
