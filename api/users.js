@@ -169,6 +169,7 @@ function decodeUserAuthValue(encodedValue) {
 }
 
 function encodeAuthValue(decodedValue) {
+	console.log("DECODED VALUE", decodedValue);
 	return new Buffer(decodedValue).toString('base64');
 }
 
