@@ -93,6 +93,8 @@ exports.authMiddleware = function(req, res, next) {
 function doTokenAuth(token, req, res, next) {
 	const auth = token.replace(/Basic:/i, '');
 
+	console.log("Authorizing with token");
+
 	const [ encodedUsername, encodedPassword ] = auth.split(':');
 	if (!encodedUsername || !encodedPassword) 
 		return res.sendStatus(401);
@@ -130,6 +132,8 @@ function doIntegrationAuth(token, service, req, res, next) {
 
 	const auth = token.replace(new RegExp(serviceToPrefix[service]+':', 'i'), '');
 	const [ username, theToken ] = auth.split(':');
+
+	console.log('Authorizing with ', service);
 
 	if (!username || !theToken || theToken !== serviceToToken[service])
 		return res.sendStatus(401);
