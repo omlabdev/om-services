@@ -224,7 +224,7 @@ exports.queryInvoices= function(filter = {}) {
 exports.checkDoubleInvoicing = function(invoice) {
 	const entries = invoice.work_entries;
 	const query = {
-		work_entries: { $elemMatch: { $in: invoice.work_entries } }
+		work_entries: { $elemMatch: { $in: invoice.work_entries || [] } }
 	}
 	return InvoiceModel.find(query)
 }
