@@ -67,34 +67,6 @@ exports._addInvoice = async function(invoice, files = []) {
 	return InvoiceModel.create(invoice);		
 }
 
-async function sendNotificationIfNeeded(_invoice) {
-	const invoiceLink = `http://localhost:3100/#/invoice/${_invoice._id}`;
-	try {
-		const invoice = await InvoiceModel.findById(_invoice._id).populate('created_by');
-		// if is not a freelancer, don't notify
-		if (!invoice.created_by.is_freelancer) return;
-		// notify whoever is the receiver of new invoice notifications
-		const users = await UserModel.find({ notify_invoices: true, slack_account: {$exists: true, $ne: ''} });
-		users.forEach(u => {
-			const message = { 
-				text: `Hey @${u.slack_account}, a new invoice has been added by ${invoice.created_by.first_name}.`,
-				attachments: JSON.stringify([
-					{
-						title : 'View invoice',
-						text : `Click <${invoiceLink}|here> to open the invoice.`,
-					},
-				])
-			};
-			sendMessageToUser(u.slack_account,  message)
-				.catch(e => console.error(e))
-		});
-	}
-	catch (e) {
-		console.error("Invoice notification error:");
-		console.error(e);
-	}
-}
-
 exports.updateInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	const invoice = req.body;
@@ -461,4 +433,40 @@ const getFilterForMonth = (date) => {
 
 const getFilterSinceDate = (date) => {
 	return { created_ts: {$gte: moment.utc(date).toDate()} }
+}
+
+/**
+ * Sends a slack notification for the given invoice if necessary.
+ * It only sends a notification if the creator is a freelancer.
+ * The notification is sent to all users that are marked as 
+ * invoice notification receivers.
+ * 
+ * @param  {Object} _invoice 
+ */
+async function sendNotificationIfNeeded(_invoice) {
+	const invoiceLink = `http://localhost:3100/#/invoice/${_invoice._id}`;
+	try {
+		const invoice = await InvoiceModel.findById(_invoice._id).populate('created_by');
+		// if is not a freelancer, don't notify
+		if (!invoice.created_by.is_freelancer) return;
+		// notify whoever is the receiver of new invoice notifications
+		const users = await UserModel.find({ notify_invoices: true, slack_account: {$exists: true, $ne: ''} });
+		users.forEach(u => {
+			const message = { 
+				text: `Hey @${u.slack_account}, a new invoice has been added by ${invoice.created_by.first_name}.`,
+				attachments: JSON.stringify([
+					{
+						title : 'View invoice',
+						text : `Click <${invoiceLink}|here> to open the invoice.`,
+					},
+				])
+			};
+			sendMessageToUser(u.slack_account,  message)
+				.catch(e => console.error(e))
+		});
+	}
+	catch (e) {
+		console.error("Invoice notification error:");
+		console.error(e);
+	}
 }
