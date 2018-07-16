@@ -3,9 +3,11 @@ const InvoiceModel = require('./../models/invoice');
 const WorkEntryModel = require('./../models/work_entry');
 const TaskModel = require('./../models/task');
 const ObjectiveModel = require('./../models/objective');
+const UserModel = require('./../models/user');
 const { runAlarms } = require('./alarms');
 const moment = require('moment');
 const multer = require('multer');
+const { sendMessageToUser } = require('../utils/slack');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -47,6 +49,7 @@ function addInvoice(req, res) {
 	const invoice = req.body;
 	exports._addInvoice(invoice, req.files)
 		.then(doc => { res.json(doc); return doc; })
+		.then(doc => { sendNotificationIfNeeded(doc); return doc; })
 		.then(doc => runAlarms(doc, InvoiceModel))
 		.catch(e => { res.json({ error: e.message }) });
 }
@@ -62,6 +65,34 @@ exports._addInvoice = async function(invoice, files = []) {
 
 	invoice.attachment = files.length > 0 ? files[0].filename : null;
 	return InvoiceModel.create(invoice);		
+}
+
+async function sendNotificationIfNeeded(_invoice) {
+	const invoiceLink = `http://localhost:3100/#/invoice/${_invoice._id}`;
+	try {
+		const invoice = await InvoiceModel.findById(_invoice._id).populate('created_by');
+		// if is not a freelancer, don't notify
+		if (!invoice.created_by.is_freelancer) return;
+		// notify whoever is the receiver of new invoice notifications
+		const users = await UserModel.find({ notify_invoices: true, slack_account: {$exists: true, $ne: ''} });
+		users.forEach(u => {
+			const message = { 
+				text: `Hey @${u.slack_account}, a new invoice has been added by ${invoice.created_by.first_name}.`,
+				attachments: JSON.stringify([
+					{
+						title : 'View invoice',
+						text : `Click <${invoiceLink}|here> to open the invoice.`,
+					},
+				])
+			};
+			sendMessageToUser(u.slack_account,  message)
+				.catch(e => console.error(e))
+		});
+	}
+	catch (e) {
+		console.error("Invoice notification error:");
+		console.error(e);
+	}
 }
 
 exports.updateInvoice = function(req, res) {

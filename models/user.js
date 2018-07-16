@@ -19,6 +19,12 @@ var schema = new Schema({
 	// freelancer fields
 	is_freelancer	: { type : Boolean, default : false },
 	hourly_rate 	: { type : Number, default : 0 },
+
+	// admin fields
+	is_admin		: { type : Boolean, default : false },
+
+	// notifications fields
+	notify_invoices : { type : Boolean, default : false }, // notify on new invoice sent by freelancer
 },{
 	toObject: {
 		virtuals: true

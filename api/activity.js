@@ -4,7 +4,7 @@ const TaskModel = require('./../models/task');
 const IntegrationModel = require('./../models/integration');
 const UserModel = require('./../models/user');
 const async = require('async');
-const { sendMessage } = require('../utils/slack');
+const { sendMessage, getDefaultChannel, getToken } = require('../utils/slack');
 
 /*
 	GET		/api/{v}/users/:id/activity/:page?
@@ -294,19 +294,16 @@ function getUsersWithIds(ids) {
  * @return {Promise}            
  */
 function sendActivityToSlack(activityId, notifyAccounts = []) {
-	const channel = process.env.NODE_ENV === 'production' ? '#om' : '#om-test';
+	const channel = getDefaultChannel();
 	// build mentions text
 	const mentions = notifyAccounts.length > 0 ? notifyAccounts.map(a => `@${a}`).join(' ') : '';
 	// populate user and hydrate
 	const hydrateP = ActivityModel.findById(activityId).populate('user').lean()
 		.then(doc => hydrateDescriptionWithPromise(doc));
-	// fetch integration to get slack token
-	const integrationP = IntegrationModel.findOne({ service: 'slack' });
 
-	return Promise.all([hydrateP, integrationP])
-		.then(([hydratedActivity, integration]) => {
+	return Promise.all([hydrateP, getToken()])
+		.then(([hydratedActivity, token]) => {
 			// send slack message with the activity description
-			const token = integration.meta.token;
 			const message = { 
 				text: (mentions ? mentions + ': ' : '') + hydratedActivity.description,
 				link_names: true 
