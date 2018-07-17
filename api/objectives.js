@@ -323,6 +323,10 @@ function getQueryDateFilter(pYear, pMonth, pDay, all, timezone) {
 	const thisMonth = moment().utcOffset(timezone).format('MM');
 	const thisDay = moment().utcOffset(timezone).format('DD');
 
+	console.log("timezone:", timezone);
+	console.log("this month:", thisMonth);
+	console.log("this day:", thisDay);
+
 	const date = moment.utc(`${pYear}-${pMonth || thisMonth}-${pDay || thisDay}`, 'YYYY-MM-DD');
 
 	const day = date.clone().startOf('day').toDate(),
