@@ -595,7 +595,7 @@ describe('alarms', function() {
 
 	})
 
-	describe.only('#eval', function() {
+	describe('#eval', function() {
 		it('Should only evaluate the alarms that match the filter', function(done) {
 
 			const alarms = [

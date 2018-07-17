@@ -9,6 +9,7 @@ const async = require('async');
 const moment = require('moment');
 const { setupObjectivesForDifferentOwners } = require('./setup/setup.objectives');
 const { setupWorkEntries } = require('./setup/setup.work_entries');
+const timezone = moment().format('Z');
 
 
 describe('objectives', function() {
@@ -62,7 +63,7 @@ describe('objectives', function() {
 	describe("#_getObjectives", function() {
 
 		it('should return only objectives where current user is owner', function(done) {
-			ObjectivesApi._getObjectives(...today, true, owner)
+			ObjectivesApi._getObjectives(...today, true, owner, timezone)
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -75,7 +76,7 @@ describe('objectives', function() {
 		})
 
 		it('should return objectives for everyone when owner is undefined', function(done) {
-			ObjectivesApi._getObjectives(...today, true)
+			ObjectivesApi._getObjectives(...today, true, undefined, timezone)
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -93,7 +94,7 @@ describe('objectives', function() {
 	describe('#getSummary', function() {
 
 		it('should return summary for user skipping deleted and scratched', function(done) {
-			ObjectivesApi._getObjectives(...today, true)
+			ObjectivesApi._getObjectives(...today, true, undefined, timezone)
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);

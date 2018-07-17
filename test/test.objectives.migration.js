@@ -21,6 +21,7 @@ const {
 	setupObjectivesForLastYearWithCompletedThisYear,
 	setupObjectivesForLastYearWithScratchedThisYear
 } = require('./setup/setup.objectives');
+const timezone = moment().format('Z');
 
 
 describe('objectives migration', function() {
@@ -71,7 +72,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for today even if completed or scratched, but no deleted', function(done) {
 			setupObjectivesForToday.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -86,7 +87,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for yesterday when not completed or scratched', function(done) {
 			setupObjectivesForYesterday.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -99,7 +100,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for yesterday when completed today', function(done) {
 			setupObjectivesForYesterdayWithCompletedToday.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -112,7 +113,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for yesterday when scratched today', function(done) {
 			setupObjectivesForYesterdayWithCompletedToday.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -125,7 +126,7 @@ describe('objectives migration', function() {
 
 		it('should only return objectives created today of before, but not after', function(done) {
 			setupObjectivesForTomorrow.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -154,7 +155,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for this month even when completed or scratched', function(done) {
 			setupObjectivesForThisMonth.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(function(objectivesByLevel) {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -168,7 +169,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for last month when not completed or scratched', function(done) {
 			setupObjectivesForLastMonth.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -181,7 +182,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for last month when completed this month', function(done) {
 			setupObjectivesForLastMonthWithCompletedThisMonth.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -194,7 +195,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for last month when scratched this month', function(done) {
 			setupObjectivesForLastMonthWithScratchedThisMonth.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(objectivesByLevel => {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -224,7 +225,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for this year when not completed nor scratched', function(done) {
 			setupObjectivesForThisYear.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(function(objectivesByLevel) {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -238,7 +239,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for last year when not completed nor scratched', function(done) {
 			setupObjectivesForLastYear.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(function(objectivesByLevel) {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -251,7 +252,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for last year when completed this year', function(done) {
 			setupObjectivesForLastYearWithCompletedThisYear.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(function(objectivesByLevel) {
 					// assertions
 					should.exist(objectivesByLevel);
@@ -264,7 +265,7 @@ describe('objectives migration', function() {
 
 		it('should return an objective created for last year when scratched this year', function(done) {
 			setupObjectivesForLastYearWithScratchedThisYear.bind(sharedData)()
-				.then(() => ObjectivesApi._getObjectives(...today, true, owner))
+				.then(() => ObjectivesApi._getObjectives(...today, true, owner, timezone))
 				.then(function(objectivesByLevel) {
 					// assertions
 					should.exist(objectivesByLevel);

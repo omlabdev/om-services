@@ -4,7 +4,7 @@ const ObjectiveModel = require('../../models/objective');
 const utils = require('./setup.utils');
 
 exports.setupObjectivesForToday = function() {
-	const todayDate = moment.utc().toDate();
+	const todayDate = moment().toDate();
 	const user = this.users[0]._id;
   return createObjectives([
   	{
@@ -40,7 +40,7 @@ exports.setupObjectivesForToday = function() {
 }
 
 exports.setupObjectivesForYesterday = function() {
-	const yesterdayDate = moment.utc().add(-1, 'day').toDate();
+	const yesterdayDate = moment().add(-1, 'day').toDate();
 	const user = this.users[0]._id;
   return createObjectives([
   	{
@@ -80,8 +80,8 @@ exports.setupObjectivesForYesterday = function() {
 }
 
 exports.setupObjectivesForYesterdayWithCompletedToday = function() {
-	const todayDate = moment.utc().toDate();
-	const yesterdayDate = moment.utc().add(-1, 'day').toDate();
+	const todayDate = moment().toDate();
+	const yesterdayDate = moment().add(-1, 'day').toDate();
 	const user = this.users[0]._id;
   return createObjectives([
   	{
@@ -106,8 +106,8 @@ exports.setupObjectivesForYesterdayWithCompletedToday = function() {
 }
 
 exports.setupObjectivesForYesterdayWithScratchedToday = function() {
-	const todayDate = moment.utc().toDate();
-	const yesterdayDate = moment.utc().add(-1, 'day').toDate();
+	const todayDate = moment().toDate();
+	const yesterdayDate = moment().add(-1, 'day').toDate();
 	const user = this.users[0]._id;
   return createObjectives([
   	{
@@ -132,7 +132,7 @@ exports.setupObjectivesForYesterdayWithScratchedToday = function() {
 }
 
 exports.setupObjectivesForTomorrow = function() {
-	const tomorrowDate = moment.utc().add(1, 'day').toDate();
+	const tomorrowDate = moment().add(1, 'day').toDate();
 	const user = this.users[0]._id;
 	return createObjectives([
 		{
@@ -146,8 +146,8 @@ exports.setupObjectivesForTomorrow = function() {
 }
 
 exports.setupObjectivesForThisMonth = function() {
-	const todayDate = moment.utc().toDate();
-	const startOfMonth = moment.utc().startOf('month');
+	const todayDate = moment().toDate();
+	const startOfMonth = moment().startOf('month');
 	const startOfMonthDate = startOfMonth.toDate();
 	const user = this.users[0]._id;
   return createObjectives([
@@ -159,7 +159,7 @@ exports.setupObjectivesForThisMonth = function() {
 			created_by : user
 		},
 		{
-			objective_date : moment.utc().toDate(),
+			objective_date : moment().toDate(),
 			level : 'month',
 			no_task_title : 'testing objective 2',
 			owners : [user],
@@ -187,7 +187,7 @@ exports.setupObjectivesForThisMonth = function() {
 }
 
 exports.setupObjectivesForLastMonth = function() {
-	const lastMonthDate = moment.utc().add(-1,'month').toDate();
+	const lastMonthDate = moment().add(-1,'month').toDate();
 	const user = this.users[0]._id;
   return createObjectives([
   	{
@@ -198,7 +198,7 @@ exports.setupObjectivesForLastMonth = function() {
 			created_by : user
 		},
 		{
-			objective_date : moment.utc().toDate(),
+			objective_date : moment().toDate(),
 			level : 'month',
 			no_task_title : 'testing objective 2',
 			owners : [user],
@@ -209,8 +209,8 @@ exports.setupObjectivesForLastMonth = function() {
 }
 
 exports.setupObjectivesForLastMonthWithCompletedThisMonth = function() {
-	const lastMonthDate = moment.utc().add(-1,'month').toDate();
-	const thisMonth = moment.utc().startOf('month').toDate();
+	const lastMonthDate = moment().add(-1,'month').toDate();
+	const thisMonth = moment().startOf('month').toDate();
 	const user = this.users[0]._id;
 	return createObjectives([
   	{
@@ -226,8 +226,8 @@ exports.setupObjectivesForLastMonthWithCompletedThisMonth = function() {
 }
 
 exports.setupObjectivesForLastMonthWithScratchedThisMonth = function() {
-	const lastMonthDate = moment.utc().add(-1,'month').toDate();
-	const thisMonth = moment.utc().startOf('month').toDate();
+	const lastMonthDate = moment().add(-1,'month').toDate();
+	const thisMonth = moment().startOf('month').toDate();
 	const user = this.users[0]._id;
 	return createObjectives([
   	{
@@ -243,8 +243,8 @@ exports.setupObjectivesForLastMonthWithScratchedThisMonth = function() {
 }
 
 exports.setupObjectivesForThisYear = function() {
-	const todayDate = moment.utc().toDate();
-	const startOfYearDate = moment.utc().startOf('month').toDate();
+	const todayDate = moment().toDate();
+	const startOfYearDate = moment().startOf('month').toDate();
   // setup objectives
   const user = this.users[0]._id;
   return createObjectives([
@@ -256,7 +256,7 @@ exports.setupObjectivesForThisYear = function() {
 			created_by : user
 		},
 		{
-			objective_date : moment.utc().toDate(),
+			objective_date : moment().toDate(),
 			level : 'year',
 			no_task_title : 'testing objective 2',
 			owners : [user],
@@ -284,7 +284,7 @@ exports.setupObjectivesForThisYear = function() {
 }
 
 exports.setupObjectivesForLastYear = function() {
-	const lastYear = moment.utc().add(-1, 'year').toDate();
+	const lastYear = moment().add(-1, 'year').toDate();
   // setup objectives
   const user = this.users[0]._id;
   return createObjectives([
@@ -299,8 +299,8 @@ exports.setupObjectivesForLastYear = function() {
 }
 
 exports.setupObjectivesForLastYearWithCompletedThisYear = function() {
-	const lastYear = moment.utc().add(-1, 'year').toDate();
-	const thisYear = moment.utc().startOf('month').toDate();
+	const lastYear = moment().add(-1, 'year').toDate();
+	const thisYear = moment().startOf('month').toDate();
   // setup objectives
   const user = this.users[0]._id;
   return createObjectives([
@@ -317,8 +317,8 @@ exports.setupObjectivesForLastYearWithCompletedThisYear = function() {
 }
 
 exports.setupObjectivesForLastYearWithScratchedThisYear = function() {
-	const lastYear = moment.utc().add(-1, 'year').toDate();
-	const thisYear = moment.utc().startOf('month').toDate();
+	const lastYear = moment().add(-1, 'year').toDate();
+	const thisYear = moment().startOf('month').toDate();
   // setup objectives
   const user = this.users[0]._id;
   return createObjectives([
@@ -336,7 +336,7 @@ exports.setupObjectivesForLastYearWithScratchedThisYear = function() {
 
 exports.setupObjectivesForDifferentOwners = function() {
 	const users = this.users.map(u => u._id);
-	const today = moment.utc().toDate();
+	const today = moment().toDate();
   return createObjectives([
   	{
 			level : 'day',
