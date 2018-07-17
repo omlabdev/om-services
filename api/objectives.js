@@ -320,6 +320,7 @@ exports._getObjectives = function(year, month, day, all, owner, timezone) {
  * @return {Objective}        The query to use to get the objectives
  */
 function getQueryDateFilter(pYear, pMonth, pDay, all, timezone) {
+	// use the client's timezone here to get the day and month he's in
 	const thisMonth = moment().utcOffset(timezone).format('MM');
 	const thisDay = moment().utcOffset(timezone).format('DD');
 
@@ -327,14 +328,15 @@ function getQueryDateFilter(pYear, pMonth, pDay, all, timezone) {
 	console.log("this month:", thisMonth);
 	console.log("this day:", thisDay);
 
-	const date = moment.utc(`${pYear}-${pMonth || thisMonth}-${pDay || thisDay}`, 'YYYY-MM-DD');
+	const date = moment(`${pYear}-${pMonth || thisMonth}-${pDay || thisDay}`, 'YYYY-MM-DD');
 
-	const day = date.clone().startOf('day').toDate(),
-		nextDay = date.clone().endOf('day').toDate(),
-		month = date.clone().startOf('month').toDate(),
-		nextMonth = date.clone().endOf('month').toDate(),
-		year = date.clone().startOf('year').startOf('day').toDate(),
-		nextYear = date.clone().startOf('day').endOf('year').toDate();
+	// use .utc() here to transform all client dates into server dates (+00:00, UTC time)
+	const day = date.clone().startOf('day').utc().toDate(),
+		nextDay = date.clone().endOf('day').utc().toDate(),
+		month = date.clone().startOf('month').utc().toDate(),
+		nextMonth = date.clone().endOf('month').utc().toDate(),
+		year = date.clone().startOf('year').startOf('day').utc().toDate(),
+		nextYear = date.clone().startOf('day').endOf('year').utc().toDate();
 
 	let query = {};
 
