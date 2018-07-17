@@ -169,8 +169,9 @@ exports.getObjectives = function(req, res) {
 	const { year, month, day } = req.params;
 	const all = req.route.path.endsWith('/all');
 	const owner = req.currentUser._id;
+	const timezone = req.query.tz || '+00:00';
 
-	exports._getObjectives(year, month, day, all, owner)
+	exports._getObjectives(year, month, day, all, owner, timezone)
 		.then(objectivesByLevel => res.json({ objectives : objectivesByLevel }))
 		.catch(e => { res.json({ error: e.message }) })
 }
@@ -240,8 +241,9 @@ exports._getObjectivesWithQuery = function(query) {
 exports.getObjectivesSummary = function(req, res) {
 	const { year, month, day } = req.params;
 	const owner = req.currentUser._id;
+	const timezone = req.query.tz || '+00:00';
 
-	exports._getObjectives(year, month, day, false)
+	exports._getObjectives(year, month, day, false, undefined, timezone)
 		.then(objectivesByLevel => objectivesByLevel.day)
 		.then(objectives => { return exports.getSummary(objectives, owner) })
 		.then(summary => { res.json({ summary }) })
@@ -290,8 +292,8 @@ exports.getSummary = function(allObjectives, owner) {
  * @param  {[type]} owner 
  * @return {Promise}       
  */
-exports._getObjectives = function(year, month, day, all, owner) {
-	let query = Object.assign({}, getQueryDateFilter(year, month, day, all), 
+exports._getObjectives = function(year, month, day, all, owner, timezone) {
+	let query = Object.assign({}, getQueryDateFilter(year, month, day, all, timezone), 
 		{ deleted : false });
 
 	if (owner !== undefined) {
@@ -314,11 +316,12 @@ exports._getObjectives = function(year, month, day, all, owner) {
  * @param  {String} pMonth 
  * @param  {String} pDay   
  * @param  {Boolean} all    True to return objectives at all levels.
+ * @param  {String} timezone The timezone the client is currently in
  * @return {Objective}        The query to use to get the objectives
  */
-function getQueryDateFilter(pYear, pMonth, pDay, all) {
-	const thisMonth = moment.utc().format('MM');
-	const thisDay = moment.utc().format('DD');
+function getQueryDateFilter(pYear, pMonth, pDay, all, timezone) {
+	const thisMonth = moment().utcOffset(timezone).format('MM');
+	const thisDay = moment().utcOffset(timezone).format('DD');
 
 	const date = moment.utc(`${pYear}-${pMonth || thisMonth}-${pDay || thisDay}`, 'YYYY-MM-DD');
 
