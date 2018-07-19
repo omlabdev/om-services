@@ -17,10 +17,10 @@ var schema = new Schema({
 
 	billed_hours 		: { type : Number },
 	
-	// fields used for *out* invoices (to clients)
+	// fields used for *out* invoices (to clients) or *in* (expense)
 	project 		  	: { type : mongoose.Schema.Types.ObjectId, ref : 'Project', required: false },
 
-	// fields used bt *in* invoices (from providers to us)
+	// fields used by *in* invoices (from providers to us or expenses)
 	receiver 		  	: { type : String },
 	work_entries 		: [{ type : mongoose.Schema.Types.ObjectId, ref : 'WorkEntry', required: false }],
 	

@@ -278,14 +278,16 @@ exports.groupInvoicesByProject = function(invoices, projectId) {
  * @return {Promise}
  */
 exports.calculateBillingVariables = function(projects) {
-	return new Promise((resolve, reject) => {
-		// calculate hours executed for this month and total
-		const promises = exports.calculateExecutedHoursForProjects(projects);
-		// after calculating executed hours, we calculate 
-		// billed hours, merge all that data into the projects
-		// and resolve this function's promise
-		Promise.all(promises).then(hours => {
-			const result = projects.map((p, idx) => {
+	return new Promise(async (resolve, reject) => {
+		try {
+			// get all expenses invoices populated all the way to related projects
+			const expenses = await getExpensesInvoicesPopulatedToProjects();
+			// calculate hours executed for this month and total
+			const hours = await Promise.all(exports.calculateExecutedHoursForProjects(projects));
+			// after calculating executed hours, we calculate 
+			// billed hours, merge all that data into the projects
+			// and resolve this function's promise
+			const result = await Promise.all(projects.map(async (p, idx) => {
 				return Object.assign({}, p, hours[idx], {
 					billed_hours_month  	: exports.calculateThisMonthBillingHours(p),
 					billed_amount_month 	: exports.calculateThisMonthBillingAmount(p),
@@ -293,14 +295,35 @@ exports.calculateBillingVariables = function(projects) {
 					billed_amount_total 	: exports.calculateTotalBillingAmount(p),
 					paid_hours_total  		: exports.calculateTotalPaidHours(p),
 					paid_amount_total 		: exports.calculateTotalPaidAmount(p),
-					expenses_amount_month 	: exports.calculateThisMonthExpenses(p),
-					expenses_amount_total 	: exports.calculateTotalExpenses(p)
+					expenses_amount_month 	: await exports.calculateThisMonthExpenses(expenses, p),
+					expenses_amount_total 	: await exports.calculateTotalExpenses(expenses, p)
 				})
-			})
+			}))
 			return resolve(result);
-		})
-		.catch(error => reject(error));
+		}
+		catch(e) { reject(e); }
 	})
+}
+
+/**
+ * Returns expenses invoices (direction=in) populated all the way
+ * up to the project.
+ * 
+ * @return {Promise} 
+ */
+function getExpensesInvoicesPopulatedToProjects() {
+	return InvoiceModel.find({ direction: 'in' })
+		.populate('work_entries')
+		.then(i => ObjectiveModel.populate(i, {
+			path: 'work_entries.objective',
+			select: 'related_task',
+			model: 'Objective'
+		}))
+		.then(i => TaskModel.populate(i, {
+			path: 'work_entries.objective.related_task',
+			select: 'project',
+			model: 'Task'
+		}));
 }
 
 /**
@@ -407,18 +430,60 @@ exports.calculateTotalPaidAmount = function(project) {
 		i => i.direction === 'out' && i.paid, project.invoices);
 }
 
-exports.calculateThisMonthExpenses = function(project) {
-	return exports.reduceInvoicesFieldWithCondition('amount', 
-		i => isThisMonth(i.invoicing_date) && i.direction === 'in', project.invoices);
+exports.calculateThisMonthExpenses = function(expenses, project) {
+	return exports.calculateTotalExpenses(
+		expenses.filter(i => isThisMonth(i.invoicing_date)), project);
 }
 
-exports.calculateTotalExpenses = function(project) {
-	return exports.reduceInvoicesFieldWithCondition('amount', 
-		i => i.direction === 'in', project.invoices);
+/**
+ * Loop through the invoices directly related to the project, and through 
+ * work entries associated to the project, and calculates for each of them 
+ * the equivalent in money for the given project.
+ *
+ * The hourly cost for work entries is calculated as: 
+ * 		invoice amount / hours billed.
+ * 
+ * Note: one invoice may have work entries related to different projects.
+ * 
+ * @param  {Array} expenses  
+ * @param  {String} projectId 
+ * @return {Number}           
+ */
+exports.calculateTotalExpenses = async function(expenses, project) {
+	let total = 0;
+	const projectId = project._id.toString();
+	expenses.forEach(i => {
+		// if directly related to a project, add the amount
+		if (i.project && i.project.toString() === projectId) {
+			total += i.amount;
+		}
+		else { // not directly related to project. check work entries.
+			const workEntries = (i.work_entries || []).filter(
+				we => we.objective.related_task && we.objective.related_task.project.toString() === projectId);
+			
+			if (workEntries.length > 0) { // if any work entry for this project
+				const hourlyRate = i.amount / i.billed_hours;
+				const totalHours = sum(workEntries.map(we => we.time / 3600));
+				total += totalHours * hourlyRate;
+			}
+		}
+	})
+	return total;
 }
 
+/**
+ * Adds the given field for each invoice in the given list that passes
+ * the given filter condition. If no condition is given, just the sum 
+ * is executed.
+ * 
+ * @param  {String} field     
+ * @param  {Function} condition 
+ * @param  {Array} invoices  
+ * @return {Number}           
+ */
 exports.reduceInvoicesFieldWithCondition = function(field, condition, invoices) {
-	return sum(invoices.filter(condition).map(i => i[field]));
+	if (condition) return sum(invoices.filter(condition).map(i => i[field]));
+	return sum(invoices.map(i => i[field]));
 }
 
 const isThisMonth = (date) => moment.utc(date).format('YYYY/MM') === moment.utc().format('YYYY/MM');
@@ -444,16 +509,19 @@ const getFilterSinceDate = (date) => {
  * @param  {Object} _invoice 
  */
 async function sendNotificationIfNeeded(_invoice) {
-	const invoiceLink = `http://localhost:3100/#/invoice/${_invoice._id}`;
+	const isDev = process.env.NODE_ENV === 'development';
+	const host = isDev ? 'http://localhost:3100' : 'https://om-frontend.herokuapp.com';
+	const invoiceLink = `${host}/#/invoice/${_invoice._id}`;
 	try {
 		const invoice = await InvoiceModel.findById(_invoice._id).populate('created_by');
 		// if is not a freelancer, don't notify
 		if (!invoice.created_by.is_freelancer) return;
 		// notify whoever is the receiver of new invoice notifications
 		const users = await UserModel.find({ notify_invoices: true, slack_account: {$exists: true, $ne: ''} });
+		const test = isDev ? '*[TEST]*  ' : '';
 		users.forEach(u => {
 			const message = { 
-				text: `Hey @${u.slack_account}, a new invoice has been added by ${invoice.created_by.first_name}.`,
+				text: `${test}Hey @${u.slack_account}, a new invoice has been added by ${invoice.created_by.first_name}.`,
 				attachments: JSON.stringify([
 					{
 						title : 'View invoice',
