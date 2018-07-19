@@ -5,7 +5,8 @@ var moment = require('moment');
 var schema = new Schema({
 	description 	  	: { type : String, required : true },
 	amount 				: { type : Number, required : true },
-	invoicing_date     	: { type : Date, required : true },
+	invoicing_date     	: { type : Date, required : true }, // the date the service was excecuted
+	invoice_date     	: { type : Date, default : Date.now }, // the date that appears in the invoice
 	paid_date 			: { type : Date, default: null },
 	number 				: { type : Number },
 	direction			: { type : String, enum: ['in', 'out'], lowercase: true, required: true },

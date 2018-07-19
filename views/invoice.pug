@@ -13,7 +13,7 @@ html
 					.invoice-title Invoice
 					.date 
 						span.title Date
-						span.value= moment(invoice.invoicing_date).format('MM/DD/YYYY')
+						span.value= moment.utc(invoice.invoice_date).format('MM/DD/YYYY')
 				.body
 					.to
 						.title To:
