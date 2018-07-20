@@ -12,7 +12,7 @@ var schema = new Schema({
 
 	// this fields are used by external integrations, like a
 	// website
-	featured		: { type : Boolean, default: true },
+	featured		: { type : Boolean, default: false },
 	description		: { type : String, default: '' },
 	description_es	: { type : String, default: '' }, // description in spanish
 	featured_image	: { type : String },
