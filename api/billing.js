@@ -510,7 +510,7 @@ const getFilterSinceDate = (date) => {
  */
 async function sendNotificationIfNeeded(_invoice) {
 	const isDev = process.env.NODE_ENV === 'development';
-	const host = isDev ? 'http://localhost:3100' : 'https://om-frontend.herokuapp.com';
+	const host = process.env.OM_FRONTEND_URL;
 	const invoiceLink = `${host}/#/invoice/${_invoice._id}`;
 	try {
 		const invoice = await InvoiceModel.findById(_invoice._id).populate('created_by');

@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const favicon = require('serve-favicon');
@@ -10,15 +12,8 @@ const moment = require('moment');
 
 mongoose.Promise = global.Promise;
 
-if (process.env.MONGODB_URI !== undefined) {
-	mongoose.connect(process.env.MONGODB_URI);
-	console.log('connecting to mLab');
-} else {
-	const DB_NAME = 'om', DB_HOST = 'localhost';
-	mongoose.connect('mongodb://' + DB_HOST + '/' + DB_NAME);
-	console.log('connecting to local database');
-}
-
+mongoose.connect(process.env.MONGODB_URI);
+console.log('connecting to ', process.env.MONGODB_URI);
 
 const app = express();
 

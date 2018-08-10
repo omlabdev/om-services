@@ -2,13 +2,11 @@
 
 	endpoint 	: '/api',
 	
-	version 	: '1.0',
+	version 	: process.env.API_VERSION,
 
-	auth_on		: true,
+	auth_on		: process.env.AUTH_REQUIRED === 'true',
 
-	app_domain 	: process.env.NODE_ENV === 'production' 
-					? 'https://om-frontend.herokuapp.com' 
-					: 'http://localhost:3100'
+	app_domain 	: process.env.OM_FRONTEND_URL
 
 }
 
