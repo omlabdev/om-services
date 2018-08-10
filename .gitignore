@@ -41,3 +41,9 @@ public/attachments/*.*
 
 # Project images
 public/images/featured_projects/*.*
+
+# Custom build tool
+build.sh
+
+# Env configs
+.env
