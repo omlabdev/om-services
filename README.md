@@ -4,6 +4,11 @@ This module supports the integrations and the frontend module. It handles all da
 
 Note: An instance of MongoDB is required for this module.
 
+# The full stack
+This is one part of a tree-part app.
+   * [Frontend Module](https://github.com/nicolasalliaume/om-frontend)
+   * [Integrations Module](https://github.com/nicolasalliaume/om-integrations)
+
 # Installation
 The following installation sequence explains how to set it up on Heroku, but feel free to use any server provider you want.
 
