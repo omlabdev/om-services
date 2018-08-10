@@ -25,7 +25,7 @@ Note: The made-up token for Slack, Git, Trello and Email should match the ones u
     
 4. [Add the Heroku git remote to your local repo](https://devcenter.heroku.com/articles/git#creating-a-heroku-remote)
 
-5. [Push the code to Heroku](https://devcenter.heroku.com/articles/git#deploying-code)
+5. [Push the code to Heroku](https://devcenter.heroku.com/articles/git#deploying-code) (Note: if your pushing from the `dev` branch, do `git push heroku dev:master`)
 
 6. Create an admin user that you can use to access the platform.
     * Connect to your MongoDB instance using `mongo <connectin string>` (for example, `mongo mongodb://heroku_asfasfas:asf098asf0987asf098@ds111111.mlab.com:123456/heroku_asfasfas`)
