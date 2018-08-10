@@ -2,10 +2,10 @@ const UsersModel = require('./../models/user');
 const sha256 = require('sha256');
 const api = require('./api');
 
-const SLACK_TOKEN = SLACK_TOKEN;
-const GIT_TOKEN = GIT_TOKEN; // just a plain ol' made-up token
-const TRELLO_TOKEN = TRELLO_TOKEN; // just another plain ol' made-up token
-const EMAIL_TOKEN = EMAIL_TOKEN; // made-up token
+const SLACK_TOKEN = process.env.SLACK_TOKEN;
+const GIT_TOKEN = process.env.GIT_TOKEN; // just a plain ol' made-up token
+const TRELLO_TOKEN = process.env.TRELLO_TOKEN; // just another plain ol' made-up token
+const EMAIL_TOKEN = process.env.EMAIL_TOKEN; // made-up token
 
 /*
 	POST	/api/{v}/users/auth
