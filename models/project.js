@@ -17,7 +17,7 @@ var schema = new Schema({
 	description_es	: { type : String, default: '' }, // description in spanish
 	featured_image	: { type : String },
 	external_link	: { type : String },
-	type			: { type : String, default: 'web' },
+	tags			: { type : [String], default: ['web'] },
 }, {
 	minimize   : false
 });
