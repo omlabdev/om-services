@@ -63,7 +63,7 @@ exports.getProjectsPublic = function(req, res) {
 		description: 1,
 		description_es: 1,
 		external_link: 1,
-		type: 1,
+		tags: 1,
 	};
 	ProjectModel.find({}, fields).sort({name: 1})
 		.then(projects => { 
