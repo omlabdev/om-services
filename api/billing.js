@@ -8,10 +8,11 @@ const { runAlarms } = require('./alarms');
 const moment = require('moment');
 const multer = require('multer');
 const { sendMessageToUser } = require('../utils/slack');
+const path = require('path');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'public/attachments')
+    cb(null, path.join( __dirname, '..', 'public', 'attachments' ));
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname)
