@@ -151,7 +151,7 @@ function doIntegrationAuth(token, service, req, res, next) {
  * @param  {String} password 
  */
 exports.authorizer = function(username, password) {
-	return UsersModel.findOne({ username, password })
+	return UsersModel.findOne({ username, password, enabled: true })
 		.then((user) => {
 			if (!user) {
 				throw new Error('invalid login');
