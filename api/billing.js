@@ -13,7 +13,9 @@ const S3 = require( '../utils/s3' );
 
 const storage = multer.diskStorage({
   destination: function ( req, file, cb ) {
-    cb( null, path.join( __dirname, '..', process.env.TEMP_FOLDER ) );
+  	const tmp = process.env.TEMP_FOLDER || 'tmp';
+  	const dir = tmp.charAt( 0 ) === '/' ? tmp : path.join( __dirname, '..', process.env.TEMP_FOLDER );
+    cb( null, dir );
   },
   filename: function ( req, file, cb ) {
     cb( null, `${ Date.now() }-${ file.originalname }` );
