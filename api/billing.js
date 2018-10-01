@@ -9,6 +9,7 @@ const moment = require('moment');
 const multer = require('multer');
 const { sendMessageToUser } = require('../utils/slack');
 const path = require('path');
+const S3 = require( '../utils/s3' );
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -40,10 +41,21 @@ exports.setup = (router) => {
 	router.get('/billing/invoices', exports.getInvoices);
 	router.get('/billing/projects', exports.getProjectsBilling);
 	router.get('/billing/projects/:projectId', exports.getBillingForProject);
-	router.post('/billing/invoices/add-invoice', upload.any(), addInvoice);
-	router.post('/billing/invoices/:invoiceId', upload.any(), exports.updateInvoice);
+	router.post('/billing/invoices/add-invoice', upload.any(), uploadToS3, addInvoice);
+	router.post('/billing/invoices/:invoiceId', upload.any(), uploadToS3, exports.updateInvoice);
 	router.delete('/billing/invoices/:invoiceId', exports.deleteInvoice);
 	router.get('/billing/invoices/:invoiceId/html', exports.renderInvoice);
+}
+
+function uploadToS3( req, res, next ) {
+	if ( req.files.length > 0 ) {
+		Promise.all( req.files.map( f => S3.put( f.path ) ) )
+			.then( urls => req.files.map( 
+				( f, idx ) => Object.assign( f, { s3_url : urls[ idx ] } ) ) 
+			)
+			.then( () => next() )
+			.catch( e => res.json({ error: "Error uploading files to S3: " + e.message }) )
+	}
 }
 
 function addInvoice(req, res) {
