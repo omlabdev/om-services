@@ -12,11 +12,11 @@ const path = require('path');
 const S3 = require( '../utils/s3' );
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join( __dirname, '..', 'public', 'attachments' ));
+  destination: function ( req, file, cb ) {
+    cb( null, path.join( __dirname, '..', process.env.TEMP_FOLDER ) );
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + '-' + file.originalname)
+  filename: function ( req, file, cb ) {
+    cb( null, `${ Date.now() }-${ file.originalname }` );
   }
 })
 let upload = multer({ storage });
@@ -47,6 +47,14 @@ exports.setup = (router) => {
 	router.get('/billing/invoices/:invoiceId/html', exports.renderInvoice);
 }
 
+/**
+ * Uploads the files stored by multer to an S3 bucket
+ * and adds the S3 urls into the file objects.
+ * 
+ * @param  {Object}   req  
+ * @param  {Object}   res  
+ * @param  {Function} next 
+ */
 function uploadToS3( req, res, next ) {
 	if ( req.files.length > 0 ) {
 		Promise.all( req.files.map( f => S3.put( f.path ) ) )
@@ -58,6 +66,12 @@ function uploadToS3( req, res, next ) {
 	}
 }
 
+/**
+ * Creates a new invoice and sends notifications if needed
+ * 
+ * @param {Object} req 
+ * @param {Object} res 
+ */
 function addInvoice(req, res) {
 	const invoice = req.body;
 	exports._addInvoice(invoice, req.files)
@@ -67,6 +81,13 @@ function addInvoice(req, res) {
 		.catch(e => { res.json({ error: e.message }) });
 }
 
+/**
+ * Creates a new invoice
+ * 
+ * @param  {Object} invoice 
+ * @param  {Array}  files   
+ * @return {Promise}
+ */
 exports._addInvoice = async function(invoice, files = []) {
 	// check double invoicing if the invoice is to us
 	if (invoice.direction === 'in') {
@@ -76,14 +97,20 @@ exports._addInvoice = async function(invoice, files = []) {
 		}
 	}
 
-	invoice.attachment = files.length > 0 ? files[0].filename : null;
-	return InvoiceModel.create(invoice);		
+	invoice.attachment = files.length > 0 ? files[0].s3_url : null;
+	return InvoiceModel.create(invoice);
 }
 
+/**
+ * Updates an invoice (including attachment)
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
 exports.updateInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	const invoice = req.body;
-	invoice.attachment = req.files.length > 0 ? req.files[0].filename : null;
+	invoice.attachment = req.files.length > 0 ? req.files[0].s3_url : null;
 
 	// not using project id cause it may have changed
 	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice}, {new: true})
@@ -92,6 +119,12 @@ exports.updateInvoice = function(req, res) {
 		.catch(e => { console.error(e); res.json({ error: e.message })})
 }
 
+/**
+ * Deletes a single invoice
+ * 
+ * @param  {Object} req 
+ * @param  {Object} res 
+ */
 exports.deleteInvoice = function(req, res) {
 	const { invoiceId } = req.params;
 	InvoiceModel.remove({ _id: invoiceId })
