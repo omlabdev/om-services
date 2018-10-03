@@ -66,6 +66,7 @@ function uploadToS3( req, res, next ) {
 			.then( () => next() )
 			.catch( e => res.json({ error: "Error uploading files to S3: " + e.message }) )
 	}
+	else next();
 }
 
 /**
