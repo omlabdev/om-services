@@ -115,6 +115,9 @@ exports.updateInvoice = function(req, res) {
 	const invoice = req.body;
 	invoice.attachment = req.files.length > 0 ? req.files[0].s3_url : null;
 
+	// unset project if empty
+	if ( invoice.project === '' ) invoice.project = null;
+
 	// not using project id cause it may have changed
 	InvoiceModel.findByIdAndUpdate(invoiceId, {$set: invoice}, {new: true})
 		.then(doc => { res.json(doc); return doc; })

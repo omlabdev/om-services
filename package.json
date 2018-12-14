@@ -13,10 +13,12 @@
     "test": "test"
   },
   "dependencies": {
+    "babel-eslint": "^10.0.1",
     "body-parser": "~1.17.1",
     "cookie-parser": "~1.4.3",
     "debug": "^2.6.9",
     "dotenv": "^6.0.0",
+    "eslint": "^5.10.0",
     "express": "^4.15.5",
     "knox-s3": "^0.9.5",
     "mocha": "^3.5.3",
