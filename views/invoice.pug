@@ -23,7 +23,7 @@ html
 						.value= invoice.description
 					.total
 						span.title Total amount
-						span.value= invoice.amount + ".00"
+						span.value= invoice.amount.toFixed( 2 )
 						span.subtitle (in USD)
 			.footer
 				.company-name ON LAB, Inc.
