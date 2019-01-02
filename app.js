@@ -1,67 +1,67 @@
-require('dotenv').config();
+require( 'dotenv' ).config();
 
-const express = require('express');
-const path = require('path');
-const favicon = require('serve-favicon');
-const logger = require('morgan');
-const cookieParser = require('cookie-parser');
-const bodyParser = require('body-parser');
-const sassMiddleware = require('node-sass-middleware');
-const mongoose = require('mongoose');
-const moment = require('moment');
+const express = require( 'express' );
+const path = require( 'path' );
+const favicon = require( 'serve-favicon' );
+const logger = require( 'morgan' );
+const cookieParser = require( 'cookie-parser' );
+const bodyParser = require( 'body-parser' );
+const sassMiddleware = require( 'node-sass-middleware' );
+const mongoose = require( 'mongoose' );
+const moment = require( 'moment' );
 
 mongoose.Promise = global.Promise;
 
-mongoose.connect(process.env.MONGODB_URI);
-console.log('connecting to ', process.env.MONGODB_URI);
+mongoose.connect( process.env.MONGODB_URI );
+console.log( 'connecting to ', process.env.MONGODB_URI );
 
 const app = express();
 
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
+app.set( 'views', path.join( __dirname, 'views' ) );
+app.set( 'view engine', 'pug' );
 
-app.locals.basedir = path.join(__dirname, 'views');
+app.locals.basedir = path.join( __dirname, 'views' );
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(sassMiddleware({
+app.use( logger( 'dev' ) );
+app.use( bodyParser.json() );
+app.use( bodyParser.urlencoded( { extended: false } ) );
+app.use( cookieParser() );
+app.use( sassMiddleware( {
 	src: __dirname,
-	dest: path.join(__dirname, 'public'),
+	dest: path.join( __dirname, 'public' ),
 	indentedSyntax: false, // true = .sass and false = .scss
 	debug: true,
-    outputStyle: 'compressed',
+	outputStyle: 'compressed',
 	sourceMap: true,
 	prefix: ''
-}));
-app.use(express.static(path.join(__dirname, 'public')));
+} ) );
+app.use( express.static( path.join( __dirname, 'public' ) ) );
 
 // allow CORS from localhost
-app.use(function(req, res, next) {
+app.use( function( req, res, next ) {
 	// Website you wish to allow to connect
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE");
-    next();
-})
+	res.setHeader( 'Access-Control-Allow-Origin', '*' );
+	res.setHeader( 'Access-Control-Allow-Headers', 'Authorization, Content-Type' );
+	res.header( 'Access-Control-Allow-Methods', 'GET, PUT, POST, DELETE' );
+	next();
+} );
 
 // expose to pug
 app.locals.moment = moment;
-app.locals.utils = require('./utils');
+app.locals.utils = require( './utils' );
 
 // setup api urls & auth
 const router = express.Router();
-const Api = require('./api/api');
+const Api = require( './api/api' );
 
 /**
  * Token authorization if auth is ON
  */
-if (Api.auth_on) {
-	router.use(require('./api/users').authMiddleware);
+if ( Api.auth_on ) {
+	router.use( require( './api/users' ).authMiddleware );
 }
 
 /**
@@ -76,27 +76,28 @@ const apis = [
 	'objectives',
 	'activity',
 	'integrations',
-	'alarms'
+	'alarms',
+	'planning',
 ];
-apis.forEach((api) => { 
-	require(`./api/${api}`).setup(router);
-})
-app.use(Api.root, router);
-console.log('currently exposing api v%s at %s', Api.version, Api.root);
+apis.forEach( ( api ) => { 
+	require( `./api/${api}` ).setup( router );
+} );
+app.use( Api.root, router );
+console.log( 'currently exposing api v%s at %s', Api.version, Api.root );
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-	var err = new Error('Not Found');
+app.use( function( req, res, next ) {
+	var err = new Error( 'Not Found' );
 	err.status = 404;
-	next(err);
-});
+	next( err );
+} );
 
-if (!process.env.LISTENING_TO_UNHANDLED_REJECTION) {
-  process.on('unhandledRejection', reason => {
-    throw reason
-  })
-  // Avoid memory leak by adding too many listeners
-  process.env.LISTENING_TO_UNHANDLED_REJECTION = true
+if ( !process.env.LISTENING_TO_UNHANDLED_REJECTION ) {
+	process.on( 'unhandledRejection', reason => {
+		throw reason;
+	} );
+	// Avoid memory leak by adding too many listeners
+	process.env.LISTENING_TO_UNHANDLED_REJECTION = true;
 }
 
 // error handler

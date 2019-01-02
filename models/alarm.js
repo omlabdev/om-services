@@ -1,9 +1,9 @@
-var mongoose = require ('mongoose');
-var Schema = mongoose.Schema;
+const mongoose = require ( 'mongoose' );
+const Schema = mongoose.Schema;
 
-var measures = ['hours_executed', 'hours_billed', 'objectives_quantity', 'tasks_quantity'];
+const measures = [ 'hours_executed', 'hours_billed', 'objectives_quantity', 'tasks_quantity' ];
 
-var schema = new Schema({
+const schema = new Schema( {
 	name 			: { type : String, required : true },
 	measure 		: { type : String, required : true, enum : measures, lowercase : true },
 
@@ -21,6 +21,6 @@ var schema = new Schema({
 { 
 	collection : 'alarms',
 	minimize   : false
-});
+} );
 
-module.exports = mongoose.model('Alarm', schema);
+module.exports = mongoose.model( 'Alarm', schema );
