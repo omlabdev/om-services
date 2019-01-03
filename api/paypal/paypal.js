@@ -15,7 +15,6 @@ paypal.configure( {
 
 function createInvoice( invoiceData ) {
 	const invoiceModel = getInvoiceTemplateWithData( invoiceData );
-
 	return new Promise( ( resolve, reject ) => {
 		paypal.invoice.create( invoiceModel, ( error, invoice ) => {
 		    if ( error ) {
@@ -29,7 +28,22 @@ function createInvoice( invoiceData ) {
 }
 
 function getInvoiceTemplateWithData( invoiceData ) {
-	const { amount, invoicing_date, billed_hours, number, project: { name, company_name } } = invoiceData;
+	const { 
+		amount, 
+		invoicing_date, 
+		billed_hours, 
+		number, 
+		project: { 
+			name, 
+			company_name, 
+			company_email 
+		} 
+	} = invoiceData;
+
+	if ( !company_email || !company_name ) {
+		throw new Error( 'Company information is missing' );
+	}
+
 	return {
 		'number': number || undefined,
 		'cc_info': [ { email: 'rafael@on-lab.com' } ],
@@ -51,7 +65,7 @@ function getInvoiceTemplateWithData( invoiceData ) {
 	        }
 	    },
 	    'billing_info': [ {
-	        'email': 'nicolasalliaume@gmail.com'
+	        'email': company_email,
 	    } ],
 	    'items': [ {
 	        'name': `${ name } development services`,

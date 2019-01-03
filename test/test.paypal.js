@@ -14,6 +14,7 @@ describe.only( 'paypal', function() {
 			project: {
 				name: 'TLL',
 				company_name: 'Work In Progress, LLC',
+				company_email: 'nicolasalliaume@gmail.com',
 			}
 		};
 
@@ -33,6 +34,7 @@ describe.only( 'paypal', function() {
 			project: {
 				name: 'TLL',
 				company_name: 'Work In Progress, LLC',
+				company_email: 'nicolasalliaume@gmail.com',
 			}
 		};
 
