@@ -1,10 +1,10 @@
-require('dotenv').config();
+require( 'dotenv' ).config();
 
 const should = require( 'should' );
 const s3 = require( '../utils/s3' );
 const path = require( 'path' );
 
-describe.only ( 'billing', function() {
+describe ( 'billing', function() {
 
 	it( 'should upload a file to s3', function() {
 
@@ -17,7 +17,7 @@ describe.only ( 'billing', function() {
 				console.log( url );
 				url.should.not.equal( null );
 
-			} )
+			} );
 
-	} )
-} )
+	} );
+} );
