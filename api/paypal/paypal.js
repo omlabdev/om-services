@@ -30,6 +30,7 @@ function createInvoice( invoiceData ) {
 function getInvoiceTemplateWithData( invoiceData ) {
 	const { 
 		amount, 
+		description,
 		invoicing_date, 
 		billed_hours, 
 		number, 
@@ -68,7 +69,7 @@ function getInvoiceTemplateWithData( invoiceData ) {
 	        'email': company_email,
 	    } ],
 	    'items': [ {
-	        'name': `${ name } development services`,
+	        'name': `${ name } - ${ description }`,
 	        'quantity': billed_hours,
 	        'unit_price': {
 	            'currency': 'USD',
