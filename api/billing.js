@@ -275,11 +275,9 @@ exports.queryInvoices = function( filter = {} ) {
  * @return {Promise}         Resolves with an array of duplicated entries
  */
 exports.checkDoubleInvoicing = function( invoice ) {
-	const entries = invoice.work_entries;
-	const query = {
+	return InvoiceModel.find( {
 		work_entries: { $elemMatch: { $in: invoice.work_entries || [] } }
-	};
-	return InvoiceModel.find( query );
+	} );
 };
 
 /**

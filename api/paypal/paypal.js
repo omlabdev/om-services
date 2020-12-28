@@ -73,7 +73,7 @@ function getInvoiceTemplateWithData( invoiceData ) {
 	        'quantity': billed_hours,
 	        'unit_price': {
 	            'currency': 'USD',
-	            'value': amount / billed_hours,
+	            'value': parseFloat( ( amount / billed_hours ).toFixed( 2 ) ),
 	        }
 	    } ],
 	    'allow_tip': false,

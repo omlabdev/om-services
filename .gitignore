@@ -47,3 +47,6 @@ build.sh
 
 # Env configs
 .env
+
+# VSCode
+.vscode/

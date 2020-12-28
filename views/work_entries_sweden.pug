@@ -1,0 +1,25 @@
+doctype html
+html
+	head
+		title Hours report for Sweden
+	body
+		table
+			thead
+				tr
+					td Date
+					td Client
+					td Role
+					td Task
+					td Hours spent
+					td Hours unbilled
+					td Comments
+			tbody
+				for entry in results
+					tr
+						td= moment(entry.created_ts).format('MM/DD')
+						td= entry.project
+						td Programmer
+						td= entry.task
+						td= (entry.time / 3600).toFixed(2).replace('.', ',')
+						td &nbsp;
+						td &nbsp;

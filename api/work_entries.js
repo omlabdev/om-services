@@ -25,6 +25,8 @@ const { runAlarms } = require('./alarms');
 	GET 	/api/{v}/projects/:id/work-entries/export/detailed/html
 
 	GET 	/api/{v}/projects/:id/work-entries/export/client/html
+
+	GET		/api/{v}/sweden/export/html
  */
 exports.setup = (router) => {
 	router.get('/objectives/:objectiveId/work-entries', exports.getWorkEntriesForObjective);
@@ -35,6 +37,50 @@ exports.setup = (router) => {
 	router.get('/projects/:projectId/work-entries/export/client/html', exports.exportWorkEntriesClientViewForProject);
 	router.get('/users/:userId/work-entries', exports.getWorkEntriesForUser);
 	router.get('/users/:userId/work-entries/export/html', exports.exportWorkEntriesForUser);
+	router.get('/sweden/export/html', exports.exportSwedenReport);
+}
+
+exports.exportSwedenReport = async function(req, res) {
+	const projects = await ProjectModel.find({
+		name: { 
+			$in: [
+				'Beauty Blender',
+				'Fellow Barber',
+				'Jamie Young',
+				'Lashify',
+				'Maison Ullens',
+				'Sarah Flint',
+				'Surratt',
+				'Sugarpova',
+			] 
+		}
+	} )
+
+	const hiddenUsers = await UserModel.find({
+		username: 'ericachiruchi'
+	});
+
+	const filters = {
+		...req.query,
+		user: { $nin: hiddenUsers.map(({ _id }) => _id) }
+	};
+
+	const entriesByProject = await Promise.all(
+		projects.map( project => 
+			_getWorkEntriesForProject( project._id, filters )
+				.then( entries => entries.map( e => ( {
+					time: e.time,
+					task: e.objective.related_task.title,
+					created_ts: e.created_ts,
+					project: project.name,
+				} ) ) )
+		)
+	);
+
+	const results = entriesByProject.reduce( (acc, entries) => [...acc, ...entries] , [])
+		.sort((a, b) => a.created_ts - b.created_ts);
+
+	res.render('work_entries_sweden', { results } );
 }
 
 exports.createWorkEntry = function(req, res) {
