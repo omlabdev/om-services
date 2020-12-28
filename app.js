@@ -9,6 +9,7 @@ const bodyParser = require( 'body-parser' );
 const sassMiddleware = require( 'node-sass-middleware' );
 const mongoose = require( 'mongoose' );
 const moment = require( 'moment' );
+const cors = require( 'cors' );
 
 mongoose.Promise = global.Promise;
 
@@ -16,6 +17,8 @@ mongoose.connect( process.env.MONGODB_URI );
 console.log( 'connecting to ', process.env.MONGODB_URI );
 
 const app = express();
+
+app.use(cors())
 
 // view engine setup
 app.set( 'views', path.join( __dirname, 'views' ) );
@@ -79,7 +82,7 @@ const apis = [
 	'alarms',
 	'planning',
 ];
-apis.forEach( ( api ) => { 
+apis.forEach( ( api ) => {
 	require( `./api/${api}` ).setup( router );
 } );
 app.use( Api.root, router );
