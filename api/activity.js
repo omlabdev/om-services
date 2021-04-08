@@ -51,21 +51,21 @@ exports.createActivity = function(activity, extras = {}) {
 		happens, such us:
 			- an objective has been created for someone other than the creator
 			- an objective has been updated with a new owner
-			- a task has been created, which may result in 
+			- a task has been created, which may result in
 				someone taking care of it
 	 */
 	switch (activity.type) {
 		case "task-created":
 			return notifySlack(); // notify without mentions
-		
+
 		case "objective-created":
 			// notify only if owner is not creator or more than one owner
-			if (extras.new.owners.length > 1 
+			if (extras.new.owners.length > 1
 				|| extras.new.owners[0].toString() !== extras.new.created_by.toString()) {
 				return notifySlack(extras.new.owners); // notify mentioning the owner(s)
 			}
 			return createP;
-		
+
 		case "objective-updated":
 			// notify only if:
 			// 	- owners have changed
@@ -76,7 +76,7 @@ exports.createActivity = function(activity, extras = {}) {
 			}
 			return createP;
 
-		default: 
+		default:
 			return createP;
 	}
 }
@@ -111,22 +111,22 @@ exports.getActivity = function(req, res) {
 		.skip(pageZero * pageSize)
 		.limit(pageSize)
 		.populate('user')
-		.exec((e, activity, count) => { 
+		.exec((e, activity, count) => {
 			if (e) return res.json({ error: e.message });
 
-			async.map(activity.map(a => a.toObject()), hydrateDescription, 
+			async.map(activity.map(a => a.toObject()), hydrateDescription,
 				(hydrateError, mappedActivity) => {
 					if (hydrateError) return res.json({ error: hydrateError });
 
-					const cursor = { 
+					const cursor = {
 						current_page : page,
-						total_pages : Math.ceil(count/pageSize), 
-						count, 
-						page_size : pageSize 
+						total_pages : Math.ceil(count/pageSize),
+						count,
+						page_size : pageSize
 					};
-					res.json({ activity: mappedActivity, cursor }) 
+					res.json({ activity: mappedActivity, cursor })
 				}
-			)			
+			)
 		})
 }
 
@@ -140,7 +140,7 @@ exports.getActivity = function(req, res) {
  * will be reflected on all the activities descriptions that are
  * related to that entity that changed.
  *
- * The variable templating is easy: you can use any document 
+ * The variable templating is easy: you can use any document
  * property, including properties from objects under the *meta*
  * property. This means that if you need to use some property
  * from an object related to the activity document by a reference
@@ -149,7 +149,7 @@ exports.getActivity = function(req, res) {
  *
  * Note: the fetching functions must be implemented here and added
  * to the logic. Right now we only contemplate meta.objective.
- * 
+ *
  * @param  {Object} doc         Document as an object (not mongoose)
  * @param  {Function} hydrateDone cb called when done
  */
@@ -163,7 +163,7 @@ function hydrateDescription(doc, hydrateDone) {
 
 	// if we need some meta info, we're gonna need to
 	// go fetch it.
-	// here are all the fetching functions we'll execute, 
+	// here are all the fetching functions we'll execute,
 	// indexed by field so we don't repeat ourselves
 	const fetchesToDo = {};
 
@@ -175,11 +175,11 @@ function hydrateDescription(doc, hydrateDone) {
 		// we better go get that bastard
 		if (variable.indexOf('meta.objective') !== -1) {
 			// queue objective to be fetched before hydrating
-			fetchesToDo['meta.objective'] = ((fetchDone) => { 
+			fetchesToDo['meta.objective'] = ((fetchDone) => {
 				fetchMetaObjective(doc.meta.objective, (err, objective) => {
 					doc.meta.objective = objective.toObject();
 					fetchDone(err);
-				}) 
+				})
 			});
 		}
 
@@ -187,11 +187,11 @@ function hydrateDescription(doc, hydrateDone) {
 		// we better go get that bastard too
 		if (variable.indexOf('meta.task') !== -1) {
 			// queue objective to be fetched before hydrating
-			fetchesToDo['meta.task'] = ((fetchDone) => { 
+			fetchesToDo['meta.task'] = ((fetchDone) => {
 				fetchMetaTask(doc.meta.task, (err, task) => {
 					doc.meta.task = task.toObject();
 					fetchDone(err);
-				}) 
+				})
 			});
 		}
 
@@ -199,11 +199,11 @@ function hydrateDescription(doc, hydrateDone) {
 		// we better go get that bastard too, again
 		if (variable.indexOf('meta.integration') !== -1) {
 			// queue objective to be fetched before hydrating
-			fetchesToDo['meta.integration'] = ((fetchDone) => { 
+			fetchesToDo['meta.integration'] = ((fetchDone) => {
 				fetchMetaIntegration(doc.meta.integration, (err, integration) => {
 					doc.meta.integration = integration.toObject();
 					fetchDone(err);
-				}) 
+				})
 			});
 		}
 	})
@@ -246,9 +246,9 @@ function hydrateDescription(doc, hydrateDone) {
 
 /**
  * Same as hydrateDescription but returns a Promise instead
- * 
- * @param  {Object} doc 
- * @return {Promise}     
+ *
+ * @param  {Object} doc
+ * @return {Promise}
  */
 function hydrateDescriptionWithPromise(doc) {
 	return new Promise((resolve, reject) => {
@@ -274,9 +274,9 @@ function fetchMetaIntegration(_id, cb) {
 /**
  * Returns a promise that will return the user objects
  * for the given ids
- * 
+ *
  * @param  {Array} ids An array of user ids
- * @return {Promise}     
+ * @return {Promise}
  */
 function getUsersWithIds(ids) {
 	return UserModel.find({ _id: {$in: ids} }).lean();
@@ -285,15 +285,16 @@ function getUsersWithIds(ids) {
 /**
  * Send the activity description with the given id to
  * slack default channel (#om).
- * 
+ *
  * Returns a promise with the result of sending the
  * message to slack
- * 
- * @param  {String} activityId 
+ *
+ * @param  {String} activityId
  * @param {Array} notifyAccounts Accounts to mention
- * @return {Promise}            
+ * @return {Promise}
  */
 function sendActivityToSlack(activityId, notifyAccounts = []) {
+	return; // Keep this while Slack integration is offline
 	const channel = getDefaultChannel();
 	// build mentions text
 	const mentions = notifyAccounts.length > 0 ? notifyAccounts.map(a => `@${a}`).join(' ') : '';
@@ -304,9 +305,9 @@ function sendActivityToSlack(activityId, notifyAccounts = []) {
 	return Promise.all([hydrateP, getToken()])
 		.then(([hydratedActivity, token]) => {
 			// send slack message with the activity description
-			const message = { 
+			const message = {
 				text: (mentions ? mentions + ': ' : '') + hydratedActivity.description,
-				link_names: true 
+				link_names: true
 			};
 			return sendMessage(channel, message, token);
 		})
