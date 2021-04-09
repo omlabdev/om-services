@@ -2,7 +2,7 @@ require( 'dotenv' ).config();
 
 const express = require( 'express' );
 const path = require( 'path' );
-const favicon = require( 'serve-favicon' );
+// const favicon = require( 'serve-favicon' );
 const logger = require( 'morgan' );
 const cookieParser = require( 'cookie-parser' );
 const bodyParser = require( 'body-parser' );
@@ -13,12 +13,12 @@ const cors = require( 'cors' );
 
 mongoose.Promise = global.Promise;
 
-mongoose.connect( process.env.MONGODB_URI );
+mongoose.connect( process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true } );
 console.log( 'connecting to ', process.env.MONGODB_URI );
 
 const app = express();
 
-app.use(cors())
+app.use( cors() );
 
 // view engine setup
 app.set( 'views', path.join( __dirname, 'views' ) );
