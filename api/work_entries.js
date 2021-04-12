@@ -5,6 +5,7 @@ const BillingApi = require('./billing');
 const ProjectModel = require('./../models/project');
 const UserModel = require('./../models/user');
 const InvoiceModel = require('./../models/invoice');
+const ObjectiveModel = require('./../models/objective');
 const { formatSecondsIntoTime } = require('../utils');
 const moment = require('moment');
 const { runAlarms } = require('./alarms');
@@ -31,6 +32,7 @@ const { runAlarms } = require('./alarms');
 exports.setup = (router) => {
 	router.get('/objectives/:objectiveId/work-entries', exports.getWorkEntriesForObjective);
 	router.post('/objectives/:objectiveId/work-entries/add', exports.createWorkEntry);
+	router.post('/clockify/work-entries/add', exports.createClockifyWorkEntry);
 	router.delete('/objectives/:objectiveId/work-entries/:workEntryId', exports.deleteWorkEntry);
 	router.get('/projects/:projectId/work-entries', exports.getWorkEntriesForProject);
 	router.get('/projects/:projectId/work-entries/export/detailed/html', exports.exportWorkEntriesDetailedViewForProject);
@@ -42,7 +44,7 @@ exports.setup = (router) => {
 
 exports.exportSwedenReport = async function(req, res) {
 	const projects = await ProjectModel.find({
-		name: { 
+		name: {
 			$in: [
 				'Beauty Blender',
 				'Fellow Barber',
@@ -52,7 +54,7 @@ exports.exportSwedenReport = async function(req, res) {
 				'Sarah Flint',
 				'Surratt',
 				'Sugarpova',
-			] 
+			]
 		}
 	} )
 
@@ -66,7 +68,7 @@ exports.exportSwedenReport = async function(req, res) {
 	};
 
 	const entriesByProject = await Promise.all(
-		projects.map( project => 
+		projects.map( project =>
 			_getWorkEntriesForProject( project._id, filters )
 				.then( entries => entries.map( e => ( {
 					time: e.time,
@@ -83,12 +85,97 @@ exports.exportSwedenReport = async function(req, res) {
 	res.render('work_entries_sweden', { results } );
 }
 
+exports.createClockifyWorkEntry = function(req, res) {
+	console.log(req.body);
+	const data = req.body;
+	ProjectModel.findOne({ name: data.project }, (err, project) => {
+		if (err) {
+			res.json({ status: 'error', err: err });
+			return;
+		}
+
+		if (!project) {
+			res.json({ status: 'error', err: 'No porject found' });
+			return;
+		}
+
+		UserModel.findOne({ username: data.user }, (err, user) => {
+			if (err) {
+				res.json({ status: 'error', err: err });
+				return;
+			}
+
+			if (!user) {
+				res.json({ status: 'error', err: 'No user found' });
+				return;
+			}
+
+			ObjectiveModel.findOne( { title: `[clockify] ${project.name}` }, (err, objective) => {
+				if (err) {
+					res.json({ status: 'error', err: err });
+					return;
+				}
+
+				if (!objective) {
+					const task = new TaskModel({
+						title: `[clockify] ${project.name}`,
+						project: project._id,
+						created_by: user._id,
+						origin: 'clockify',
+					});
+
+					task.save((err) => {
+						if (err) {
+							res.json({ status: 'error', err: err });
+							return;
+						}
+
+						objective = new ObjectiveModel({
+							level: 'month',
+							related_task: task._id,
+							owners: [user._id],
+							created_by: user._id,
+						});
+
+						objective.save((err) => {
+							if (err) {
+								res.json({ status: 'error', err: err });
+								return;
+							}
+							newClockifyWorkEntry(objective._id, user._id, data.time);
+						});
+					});
+				} else {
+					// TODO: Check if user is in objective.owner and add it if not
+					newClockifyWorkEntry(objective._id, user._id, data.time);
+				}
+			});
+		});
+	});
+
+	function newClockifyWorkEntry(objective_id, user_id, time) {
+		const workEntry = new WorkEntryModel({
+			objective: objective_id,
+			user: user_id,
+			time: time,
+		});
+		workEntry.save((err) => {
+			if (err) {
+				res.json({ status: 'error', err: err });
+				return;
+			}
+
+			res.json({ status: 'ok' });
+		});
+	}
+}
+
 exports.createWorkEntry = function(req, res) {
 	const entryData = setCreateDefaults(req.body, req);
 	const model = new WorkEntryModel(entryData);
 
 	const createP = WorkEntryModel.create(model);
-	const activityP = createP.then(doc => 
+	const activityP = createP.then(doc =>
 		createCreateActivity(doc, doc.user));
 
 	Promise.all([createP, activityP])
@@ -111,7 +198,7 @@ exports.deleteWorkEntry = function(req, res) {
 	const _id = req.params.workEntryId;
 	const findP = WorkEntryModel.findById(_id);
 	const deleteP = findP.then(() => WorkEntryModel.remove({ _id }));
-	const activityP = findP.then(doc => 
+	const activityP = findP.then(doc =>
 		createDeleteActivity(doc, req.currentUser._id))
 	Promise.all([findP, deleteP, activityP])
 		.then(([doc, result, _]) => { res.json(result) })
@@ -143,7 +230,7 @@ function createDeleteActivity(workEntry, userId) {
 		description: `%user.first_name% has deleted ${formattedTime}hs from objective: %meta.objective.title%`,
 		type: `workentry-deleted`,
 		user: userId.toString(),
-		meta: { objective : workEntry.objective } 
+		meta: { objective : workEntry.objective }
 	})
 }
 
@@ -159,7 +246,7 @@ function _populateBilled(byUserId) {
 	return async workEntries => {
 		const query = { direction: 'in' };
 		if (byUserId) query.created_by = byUserId;
-		
+
 		const invoices = await InvoiceModel.find(query);
 		return workEntries.map(we => {
 			for (var i = 0; i < invoices.length; i++) {
@@ -186,20 +273,20 @@ function _populateBilled(byUserId) {
  * inside the filters.
  *
  * Returns a promise for the array of work entries.
- * 
- * @param  {String} userId   
- * @param  {Object} _filters 
- * @return {Promise}          
+ *
+ * @param  {String} userId
+ * @param  {Object} _filters
+ * @return {Promise}
  */
 function _getWorkEntriesForUser(userId, _filters) {
 	// force userId as filter
 	const filters = Object.assign(_filters, { user: userId });
-	
-	// if project is filtered, remove for the we filter and 
+
+	// if project is filtered, remove for the we filter and
 	// filter locally later through objective.related_task.project
 	let projectId = filters.project;
 	if (projectId) {
-		delete filters.project; 
+		delete filters.project;
 	}
 
 	const query = _formatFilters(filters);
@@ -207,12 +294,12 @@ function _getWorkEntriesForUser(userId, _filters) {
 	return WorkEntryModel.find(query)
 		.sort({ created_ts: -1 })
 		.populate('user objective')
-		.then(we => TaskModel.populate(we, { // populate deeper level 
+		.then(we => TaskModel.populate(we, { // populate deeper level
 			path: 'objective.related_task',
 			select: 'title project',
 			model: 'Task'
 		}))
-		.then(we => ProjectModel.populate(we, { // populate deeper deeper level 
+		.then(we => ProjectModel.populate(we, { // populate deeper deeper level
 			path: 'objective.related_task.project',
 			select: 'name',
 			model: 'Project'
@@ -223,7 +310,7 @@ function _getWorkEntriesForUser(userId, _filters) {
 function filterByProject(projectId = null) {
 	return function(we) {
 		if (!projectId) return true;
-		return we.objective.related_task 
+		return we.objective.related_task
 			&& we.objective.related_task.project.id === projectId;
 	}
 }
@@ -239,9 +326,9 @@ exports.getWorkEntriesForProject = function(req, res) {
 /**
  * Renders a detailed HTML report of work entries for the specified
  * project applying the filters sent on the request by querystring.
- * 
- * @param  {Object} req 
- * @param  {Object} res 
+ *
+ * @param  {Object} req
+ * @param  {Object} res
  */
 exports.exportWorkEntriesDetailedViewForProject = function(req, res) {
 	const { projectId } = req.params;
@@ -259,9 +346,9 @@ exports.exportWorkEntriesDetailedViewForProject = function(req, res) {
 /**
  * Renders a detailed HTML report of work entries for the specified
  * user applying the filters sent on the request by querystring.
- * 
- * @param  {Object} req 
- * @param  {Object} res 
+ *
+ * @param  {Object} req
+ * @param  {Object} res
  */
 exports.exportWorkEntriesForUser = function(req, res) {
 	const { userId } = req.params;
@@ -281,9 +368,9 @@ exports.exportWorkEntriesForUser = function(req, res) {
  * project applying the filters sent on the request by querystring.
  *
  * Also includes purchased hours left.
- * 
- * @param  {Object} req 
- * @param  {Object} res 
+ *
+ * @param  {Object} req
+ * @param  {Object} res
  */
 exports.exportWorkEntriesClientViewForProject = function(req, res) {
 	const { projectId } = req.params;
@@ -299,17 +386,17 @@ exports.exportWorkEntriesClientViewForProject = function(req, res) {
 }
 
 /**
- * Optimized way to fetch the work entries recorded for the 
+ * Optimized way to fetch the work entries recorded for the
  * given project id after applying the given filters.
  *
  * Starts with the project and walks down to the tasks, then
  * objectives and then work entries.
  *
  * Returns a Premise for a working entries array.
- * 
- * @param  {String} projectId 
- * @param  {Object} _filters  
- * @return {Premise}           
+ *
+ * @param  {String} projectId
+ * @param  {Object} _filters
+ * @return {Premise}
  */
 function _getWorkEntriesForProject(projectId, _filters = {}) {
 	let filters = _formatFilters(_filters);
@@ -319,9 +406,9 @@ function _getWorkEntriesForProject(projectId, _filters = {}) {
 /**
  * Receives an object with filters sent over the request
  * and re-formats them to make them Mongo-compatible.
- * 
- * @param  {Object} _filters 
- * @return {Object}          
+ *
+ * @param  {Object} _filters
+ * @return {Object}
  */
 function _formatFilters(_filters) {
 	let filters = Object.assign({}, _filters);
@@ -346,4 +433,3 @@ function _formatFilters(_filters) {
 
 	return filters;
 }
-

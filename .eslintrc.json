@@ -36,15 +36,7 @@
             "always"
         ],
         "object-curly-spacing": [
-            "error", 
-            "always"
-        ],
-        "array-bracket-spacing": [
-            "error", 
-            "always"
-        ],
-        "space-in-parens": [
-            "error", 
+            "error",
             "always"
         ],
         "no-console": [
