@@ -86,8 +86,8 @@ exports.exportSwedenReport = async function(req, res) {
 }
 
 exports.createClockifyWorkEntry = function(req, res) {
-	console.log(req.body);
 	const data = req.body;
+	// Find the project
 	ProjectModel.findOne({ name: data.project }, (err, project) => {
 		if (err) {
 			res.json({ status: 'error', err: err });
@@ -99,7 +99,8 @@ exports.createClockifyWorkEntry = function(req, res) {
 			return;
 		}
 
-		UserModel.findOne({ username: data.user }, (err, user) => {
+		// Find the user
+		UserModel.findOne({ email: data.user }, (err, user) => {
 			if (err) {
 				res.json({ status: 'error', err: err });
 				return;
@@ -110,17 +111,19 @@ exports.createClockifyWorkEntry = function(req, res) {
 				return;
 			}
 
-			ObjectiveModel.findOne( { title: `[clockify] ${project.name}` }, (err, objective) => {
+			// Find the objective
+			TaskModel.findOne( { title: `[clockify] ${project.name}` }, (err, task) => {
 				if (err) {
 					res.json({ status: 'error', err: err });
 					return;
 				}
 
-				if (!objective) {
-					const task = new TaskModel({
+				// If there's no task => create a new task and then a new objective
+				if (!task) {
+					task = new TaskModel({
 						title: `[clockify] ${project.name}`,
 						project: project._id,
-						created_by: user._id,
+						created_by: req.currentUser._id.toString(),
 						origin: 'clockify',
 					});
 
@@ -130,11 +133,11 @@ exports.createClockifyWorkEntry = function(req, res) {
 							return;
 						}
 
-						objective = new ObjectiveModel({
+						const objective = new ObjectiveModel({
 							level: 'month',
 							related_task: task._id,
 							owners: [user._id],
-							created_by: user._id,
+							created_by: req.currentUser._id.toString(),
 						});
 
 						objective.save((err) => {
@@ -146,13 +149,27 @@ exports.createClockifyWorkEntry = function(req, res) {
 						});
 					});
 				} else {
-					// TODO: Check if user is in objective.owner and add it if not
-					newClockifyWorkEntry(objective._id, user._id, data.time);
+					ObjectiveModel.findOne({ related_task: task._id }, (err, objective) => {
+						// If there's an objective, make sure the user is an owner for it
+						if (objective.owners.indexOf(user._id) === -1) {
+							objective.owners.push(user._id);
+							objective.save((err) => {
+								if (err) {
+									res.json({ status: 'error', err: err });
+									return;
+								}
+								newClockifyWorkEntry(objective._id, user._id, data.time);
+							});
+						} else {
+							newClockifyWorkEntry(objective._id, user._id, data.time);
+						}
+					});
 				}
 			});
 		});
 	});
 
+	// Create the new work entry with the time from Clockify
 	function newClockifyWorkEntry(objective_id, user_id, time) {
 		const workEntry = new WorkEntryModel({
 			objective: objective_id,
@@ -168,7 +185,7 @@ exports.createClockifyWorkEntry = function(req, res) {
 			res.json({ status: 'ok' });
 		});
 	}
-}
+};
 
 exports.createWorkEntry = function(req, res) {
 	const entryData = setCreateDefaults(req.body, req);
