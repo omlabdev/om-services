@@ -112,7 +112,8 @@ exports.createClockifyWorkEntry = function(req, res) {
 			}
 
 			// Find the objective
-			TaskModel.findOne( { title: `[clockify] ${project.name}` }, (err, task) => {
+			const title = data.title ? data.title : `[clockify] ${project.name}`;
+			TaskModel.findOne( { title: title }, (err, task) => {
 				if (err) {
 					res.json({ status: 'error', err: err });
 					return;
@@ -121,7 +122,7 @@ exports.createClockifyWorkEntry = function(req, res) {
 				// If there's no task => create a new task and then a new objective
 				if (!task) {
 					task = new TaskModel({
-						title: `[clockify] ${project.name}`,
+						title: title,
 						project: project._id,
 						created_by: req.currentUser._id.toString(),
 						origin: 'clockify',
